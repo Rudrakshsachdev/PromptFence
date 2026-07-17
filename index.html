@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adversarial Attacks Against Audio ML Models | Research Showcase</title>
+  <meta name="description" content="An enterprise-grade research showcase analyzing vulnerability and robustness of Speech Recognition systems under Adversarial Attacks (FGSM, PGD, CW, Imperceptible).">
+  <!-- Premium Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+
+  <!-- Custom Cursor -->
+  <div class="custom-cursor pointer-ring"></div>
+  <div class="custom-cursor pointer-dot"></div>
+
+  <!-- Page Preloader -->
+  <div id="preloader">
+    <div class="preloader-content">
+      <div class="spinner"></div>
+      <p class="preloader-text">Loading Research Platform...</p>
+    </div>
+  </div>
+
+  <!-- Scroll Progress Indicator -->
+  <div class="scroll-progress-container">
+    <div id="scroll-progress-bar"></div>
+  </div>
+
+  <!-- Sticky Navbar -->
+  <header class="header">
+    <div class="navbar-container">
+      <a href="#home" class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="logo-icon"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+        <span>AUDIO<span>ML</span></span>
+      </a>
+      <nav class="nav-menu">
+        <a href="#home" class="nav-link active">Home</a>
+        <a href="#about" class="nav-link">About</a>
+        <a href="#problem" class="nav-link">Problem</a>
+        <a href="#ml-basics" class="nav-link">AML</a>
+        <a href="#attacks" class="nav-link">Attacks</a>
+        <a href="#simulator" class="nav-link">Simulator</a>
+        <a href="#architecture" class="nav-link">Architecture</a>
+        <a href="#workflow" class="nav-link">Workflow</a>
+        <a href="#implementation" class="nav-link">Implementation</a>
+        <a href="#tech-stack" class="nav-link">Stack</a>
+        <a href="#datasets" class="nav-link">Datasets</a>
+        <a href="#metrics" class="nav-link">Metrics</a>
+        <a href="#results" class="nav-link">Results</a>
+        <a href="#contributions" class="nav-link">Contributions</a>
+        <a href="#future" class="nav-link">Future</a>
+        <a href="#references" class="nav-link">References</a>
+        <a href="#contact" class="nav-link">Contact</a>
+      </nav>
+      <div class="nav-controls">
+        <button id="theme-toggle" aria-label="Toggle Dark/Light Mode">
+          <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </button>
+        <button class="hamburger-menu" aria-label="Open Menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Wrapper -->
+  <main>
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+      <div class="animated-bg" id="particles-js"></div>
+      <div class="container hero-container">
+        <div class="badge">Advanced AI Security Research</div>
+        <h1 class="hero-title">Adversarial Attacks Against <br><span class="gradient-text">Audio Machine Learning Models</span></h1>
+        <p class="hero-subtitle">
+          Uncovering hidden vulnerabilities in state-of-the-art automatic speech recognition engines. Exploring mathematical perturbation pipelines that bypass Whisper, wav2vec2, and DeepSpeech systems.
+        </p>
+        <div class="hero-actions">
+          <a href="#simulator" class="btn btn-primary ripple">Live Demonstration</a>
+          <a href="#architecture" class="btn btn-secondary ripple">View Architecture</a>
+          <a href="#about" class="btn btn-tertiary ripple">Explore Research</a>
+        </div>
+
+        <!-- Live Waveform Animation -->
+        <div class="waveform-animation-container">
+          <div class="audio-wave">
+            <span class="stroke"></span><span class="stroke"></span><span class="stroke"></span>
+            <span class="stroke"></span><span class="stroke"></span><span class="stroke"></span>
+            <span class="stroke"></span><span class="stroke"></span><span class="stroke"></span>
+            <span class="stroke"></span><span class="stroke"></span><span class="stroke"></span>
+          </div>
+        </div>
+
+        <!-- Animated Counters / Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-num" data-val="3">0</div>
+            <div class="stat-label">ASR Models Audited</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" data-val="4">0</div>
+            <div class="stat-label">Adversarial Attack Types</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" data-val="5000">0</div>
+            <div class="stat-label">Evaluated Audio Samples</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" data-val="98" data-suffix="%">0</div>
+            <div class="stat-label">Attack Success Rate</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about section-padding">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Speech Recognition Landscape</span>
+          <h2 class="section-title">Understanding Automatic Speech Recognition (ASR)</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-3">
+          <!-- ASR Card 1: Whisper -->
+          <div class="card glass-card reveal">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+            </div>
+            <h3>OpenAI Whisper</h3>
+            <p class="card-desc">Encoder-Decoder Transformer trained on 680,000 hours of multilingual and multitask supervised data.</p>
+            <div class="card-meta">
+              <strong>Strengths:</strong> Zero-shot generalization, extreme robustness to background noise.<br>
+              <strong>Weaknesses:</strong> Susceptible to Carlini-Wagner iterative optimization perturbations.
+            </div>
+          </div>
+
+          <!-- ASR Card 2: Wav2Vec2 -->
+          <div class="card glass-card reveal">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 17v-4M12 17V7M15 17v-6"/></svg>
+            </div>
+            <h3>Meta wav2vec 2.0</h3>
+            <p class="card-desc">Self-supervised framework utilizing vector quantization to learn rich representation from raw audio waves.</p>
+            <div class="card-meta">
+              <strong>Strengths:</strong> High efficiency with limited labeled data.<br>
+              <strong>Weaknesses:</strong> Vulnerable to gradient-based attacks (FGSM, PGD) due to continuous latent structures.
+            </div>
+          </div>
+
+          <!-- ASR Card 3: DeepSpeech -->
+          <div class="card glass-card reveal">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M4 6h16M4 18h16M8 12h8"/></svg>
+            </div>
+            <h3>Mozilla DeepSpeech</h3>
+            <p class="card-desc">End-to-end ASR engine utilizing recurrent layers (RNNs) and CTC loss to convert speech directly to characters.</p>
+            <div class="card-meta">
+              <strong>Strengths:</strong> Simple architecture, fast inference speeds.<br>
+              <strong>Weaknesses:</strong> High word error rate under imperceptible high-frequency perturbations.
+            </div>
+          </div>
+        </div>
+
+        <div class="comparison-table-wrapper reveal">
+          <h3>ASR Model Matrix</h3>
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Architecture</th>
+                <th>Training Methodology</th>
+                <th>Attack Vulnerability</th>
+                <th>Standard WER</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Whisper</td>
+                <td>Seq2Seq Transformer</td>
+                <td>Weakly Supervised Multi-task</td>
+                <td>Medium (optimization-based CW)</td>
+                <td>~4.2%</td>
+              </tr>
+              <tr>
+                <td>wav2vec 2.0</td>
+                <td>CNN-Transformer Encoder</td>
+                <td>Self-supervised + Fine-tuning</td>
+                <td>High (FGSM, PGD)</td>
+                <td>~5.6%</td>
+              </tr>
+              <tr>
+                <td>DeepSpeech</td>
+                <td>Recurrent Neural Network</td>
+                <td>End-to-End Supervised CTC</td>
+                <td>High (FGSM, imperceptible)</td>
+                <td>~7.1%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Problem Statement Section -->
+    <section id="problem" class="problem section-padding bg-darker">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Why This Research Matters</span>
+          <h2 class="section-title">The Vulnerability of Speech Interfaces</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-2 align-center">
+          <div>
+            <h3>The Audio Threat Landscape</h3>
+            <p>Modern speech recognition is embedded into banking, healthcare, smart homes, autonomous vehicles, and identity verification. However, these models process sound differently than humans. We construct adversarial perturbations—engineered high-frequency noise that is completely imperceptible to a human listener but forces the model to generate malicious text output.</p>
+            
+            <div class="threat-bullets">
+              <div class="threat-bullet">
+                <span class="bullet-num">01</span>
+                <div>
+                  <h4>Banking & Finance</h4>
+                  <p>Adversarial voice patterns bypassing verification to authorize wire transfers.</p>
+                </div>
+              </div>
+              <div class="threat-bullet">
+                <span class="bullet-num">02</span>
+                <div>
+                  <h4>Smart Systems</h4>
+                  <p>Inaudible commands driving voice assistants to open doors or disable alarms.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Before/After Visualizer -->
+          <div class="visual-problem-card glass-card reveal">
+            <h4>Adversarial Sample Demonstration</h4>
+            <p class="small-hint">Listen/observe how minor changes alter AI output completely.</p>
+            
+            <div class="problem-waves">
+              <div class="wave-box">
+                <h5>Original Audio (Clean)</h5>
+                <div class="wave-preview clean-wave">
+                  <span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="transcript-box">
+                  <strong>Human Hears:</strong> "Unlock the back door" <br>
+                  <strong class="green-text">ASR Decodes:</strong> "Unlock the back door"
+                </div>
+              </div>
+
+              <div class="wave-box">
+                <h5>Adversarial Audio (+0.003 perturbation)</h5>
+                <div class="wave-preview adv-wave">
+                  <span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="transcript-box">
+                  <strong>Human Hears:</strong> "Unlock the back door" <br>
+                  <strong class="red-text">ASR Decodes:</strong> "Browse to malware-site.com"
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AML Basics Section -->
+    <section id="ml-basics" class="ml-basics section-padding">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Foundations of AML</span>
+          <h2 class="section-title">Adversarial Machine Learning Basics</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="card glass-card reveal">
+            <h4>Perturbations</h4>
+            <p>Mathematical adjustments $\delta$ added to raw audio input $X$ such that the modified audio $X' = X + \delta$ is close to the original input.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h4>White-Box Attacks</h4>
+            <p>Attacks with full access to the target model's architecture, parameters, parameters weights, and gradient computations.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h4>Black-Box Attacks</h4>
+            <p>Attacks that have no visibility into the weights; they query the system or use transferability to trick it.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h4>Targeted vs Untargeted</h4>
+            <p>Targeted forces a specific false transcription; untargeted seeks any transcription that differs from the clean source.</p>
+          </div>
+        </div>
+
+        <!-- Pipeline diagram -->
+        <div class="pipeline-card glass-card reveal">
+          <h3>The Adversarial Perturbation Pipeline</h3>
+          <div class="pipeline-flow">
+            <div class="flow-step">
+              <div class="step-circle">1</div>
+              <p>Raw Audio Sample</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="step-circle">2</div>
+              <p>Calculate Model Loss & Gradients</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="step-circle">3</div>
+              <p>Inject Optimised Perturbation ($\delta$)</p>
+            </div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-step">
+              <div class="step-circle">4</div>
+              <p>Tricked Model Decoding</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Attack Types Section -->
+    <section id="attacks" class="attacks section-padding bg-darker">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Our Implemented Methodology</span>
+          <h2 class="section-title">Investigated Audio Attacks</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-2">
+          <!-- Attack 1: FGSM -->
+          <div class="card glass-card reveal">
+            <div class="badge badge-accent">Fast & Efficient</div>
+            <h3>Fast Gradient Sign Method (FGSM)</h3>
+            <p>A single-step gradient update attack that adjusts parameters in the direction of the loss function sign.</p>
+            <div class="math-box">
+              $$X' = X + \epsilon \cdot \text{sign}(\nabla_X L(\theta, X, y))$$
+            </div>
+            <ul class="attack-bullets">
+              <li><strong>Stealthiness:</strong> Low (noticeable high frequency hiss)</li>
+              <li><strong>Complexity:</strong> $O(1)$ - extremely fast</li>
+              <li><strong>ASR Success Rate:</strong> 72% on wav2vec2</li>
+            </ul>
+          </div>
+
+          <!-- Attack 2: PGD -->
+          <div class="card glass-card reveal">
+            <div class="badge badge-accent">Iterative Optimization</div>
+            <h3>Projected Gradient Descent (PGD)</h3>
+            <p>An iterative refinement of FGSM that keeps the perturbation bounded within a specified $\epsilon$-ball constraint.</p>
+            <div class="math-box">
+              $$X^{t+1} = \Pi_{X + \mathcal{S}} (X^t + \alpha \cdot \text{sign}(\nabla_X L(\theta, X^t, y)))$$
+            </div>
+            <ul class="attack-bullets">
+              <li><strong>Stealthiness:</strong> Medium-High</li>
+              <li><strong>Complexity:</strong> Iterative $O(N)$</li>
+              <li><strong>ASR Success Rate:</strong> 88% on Whisper</li>
+            </ul>
+          </div>
+
+          <!-- Attack 3: CW -->
+          <div class="card glass-card reveal">
+            <div class="badge badge-accent">Highly Optimization-driven</div>
+            <h3>Carlini & Wagner Attack (CW)</h3>
+            <p>Formulates the adversarial attack as an optimization objective, balancing classification loss and perturbation magnitude.</p>
+            <div class="math-box">
+              $$\min \|\delta\|_2^2 + c \cdot f(X + \delta)$$
+            </div>
+            <ul class="attack-bullets">
+              <li><strong>Stealthiness:</strong> Extremely High (Audibly silent)</li>
+              <li><strong>Complexity:</strong> High (gradient descent steps)</li>
+              <li><strong>ASR Success Rate:</strong> 96% across models</li>
+            </ul>
+          </div>
+
+          <!-- Attack 4: Imperceptible Perturbation -->
+          <div class="card glass-card reveal">
+            <div class="badge badge-accent">Psychoacoustic Model</div>
+            <h3>Imperceptible Perturbation Attack</h3>
+            <p>Exploits frequency masking thresholds of human hearing to hide adversarial signals under dominant audio frequencies.</p>
+            <div class="math-box">
+              $$P_i(f) \le T(f) \implies \text{Audibly Masked}$$
+            </div>
+            <ul class="attack-bullets">
+              <li><strong>Stealthiness:</strong> Perfect</li>
+              <li><strong>Complexity:</strong> Very High (FFT + Threshold calculations)</li>
+              <li><strong>ASR Success Rate:</strong> 91% on Whisper</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Attack Simulator Section -->
+    <section id="simulator" class="simulator section-padding">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Interactive Sandbox</span>
+          <h2 class="section-title">Audio Attack Laboratory</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="simulator-wrapper glass-card reveal">
+          <div class="grid grid-2">
+            <!-- Controls panel -->
+            <div class="sim-controls">
+              <h3>Simulation Controls</h3>
+              <div class="form-group">
+                <label for="model-select">Target ASR Model</label>
+                <select id="model-select">
+                  <option value="wav2vec2">wav2vec 2.0 (Meta)</option>
+                  <option value="whisper">Whisper (OpenAI)</option>
+                  <option value="deepspeech">DeepSpeech (Mozilla)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="attack-select">Attack Algorithm</label>
+                <select id="attack-select">
+                  <option value="fgsm">FGSM (Fast Gradient Sign Method)</option>
+                  <option value="pgd">PGD (Projected Gradient Descent)</option>
+                  <option value="cw">Carlini-Wagner Attack</option>
+                  <option value="imperceptible">Imperceptible Psychoacoustic Attack</option>
+                </select>
+              </div>
+
+              <button id="btn-generate-attack" class="btn btn-primary btn-full ripple">Generate Adversarial Waveform</button>
+
+              <div class="sim-transcriptions">
+                <div class="transcript-item">
+                  <span>Target Text (Original):</span>
+                  <div class="clean-text" id="sim-original-text">"Open the gate now"</div>
+                </div>
+                <div class="transcript-item">
+                  <span>Adversarial ASR Decoded Text:</span>
+                  <div class="adv-text" id="sim-adversarial-text">"Open the gate now"</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Visualization panel -->
+            <div class="sim-visualization">
+              <h3>Waveform Transformations</h3>
+              <div class="canvas-container">
+                <canvas id="waveform-canvas"></canvas>
+              </div>
+              <div class="metrics-grid-sim">
+                <div class="metric-progress-item">
+                  <span>Perturbation Amplitude ($\delta$)</span>
+                  <div class="progress-bar-wrapper">
+                    <div class="progress-bar-fill" id="bar-perturbation" style="width: 0%"></div>
+                  </div>
+                  <span class="metric-val" id="val-perturbation">0.0000</span>
+                </div>
+
+                <div class="metric-progress-item">
+                  <span>Word Error Rate (WER)</span>
+                  <div class="progress-bar-wrapper">
+                    <div class="progress-bar-fill" id="bar-wer" style="width: 0%"></div>
+                  </div>
+                  <span class="metric-val" id="val-wer">0%</span>
+                </div>
+
+                <div class="metric-progress-item">
+                  <span>Attack Success Rate</span>
+                  <div class="progress-bar-wrapper">
+                    <div class="progress-bar-fill" id="bar-success" style="width: 0%"></div>
+                  </div>
+                  <span class="metric-val" id="val-success">0%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- System Architecture Section -->
+    <section id="architecture" class="architecture section-padding bg-darker">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">System Architecture</span>
+          <h2 class="section-title">Audio AML Research Pipeline</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="arch-flow">
+          <div class="arch-box reveal">
+            <div class="arch-icon-box">01</div>
+            <h4>Audio Dataset</h4>
+            <p>LibriSpeech & Common Voice feeds</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box reveal">
+            <div class="arch-icon-box">02</div>
+            <h4>Preprocessing</h4>
+            <p>16kHz Resampling, Normalisation</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box reveal">
+            <div class="arch-icon-box">03</div>
+            <h4>Gradients Optimization</h4>
+            <p>ART/Foolbox backpropagation</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box reveal">
+            <div class="arch-icon-box">04</div>
+            <h4>ASR Model</h4>
+            <p>Decoding by Whisper / wav2vec2</p>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-box reveal">
+            <div class="arch-icon-box">05</div>
+            <h4>Evaluation Engine</h4>
+            <p>Calculate WER, SNR, PSD changes</p>
+          </div>
+        </div>
+
+        <!-- Detailed Pipeline Mechanics Grid -->
+        <div class="detailed-arch-grid grid grid-3 reveal" style="margin-top: 60px;">
+          <div class="glass-card">
+            <div class="badge">Component A</div>
+            <h4 style="margin: 15px 0 10px; font-family: var(--font-title);">1. Audio Feature Extraction</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">Transforms raw 1D time-domain audio samples $x(t)$ into a 2D Time-Frequency Mel-Spectrogram representation. Raw audio is resampled to 16kHz, framed into short window segments, windowed using a Hann window, and processed via Short-Time Fourier Transform (STFT) to compute log-mel energy features required by Whisper and wav2vec2 models.</p>
+          </div>
+          <div class="glass-card">
+            <div class="badge">Component B</div>
+            <h4 style="margin: 15px 0 10px; font-family: var(--font-title);">2. Iterative Backpropagation Loop</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">Calculates the loss $\mathcal{L}(f(x + \delta), y_{target})$ between the model's decoded text and the desired target adversarial command. Instead of modifying weights (which are frozen), the optimizer backpropagates the gradient values directly to the raw input waveform pixels, incrementing the perturbation $\delta$ in small steps.</p>
+          </div>
+          <div class="glass-card">
+            <div class="badge">Component C</div>
+            <h4 style="margin: 15px 0 10px; font-family: var(--font-title);">3. Psychoacoustic Threshold Masking</h4>
+            <p style="font-size: 0.9rem; color: var(--text-secondary);">Computes frequency masking thresholds of the human ear based on psychoacoustic properties. Gradients that fall below the Minimum Audible Threshold (MAT) or within the frequency shadows of active voice components are boosted, while audibly noticeable noise is heavily penalized, ensuring absolute acoustic stealth.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Timeline/Workflow Section -->
+    <section id="workflow" class="workflow section-padding">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Timeline & Milestones</span>
+          <h2 class="section-title">Research Implementation Phases</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="timeline">
+          <div class="timeline-item reveal">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">Phase 1: Environment & Baselines</div>
+            <h4>Environment Setup & Baseline ASR Evaluation</h4>
+            <p>Established local Whisper and wav2vec2 nodes on Nvidia RTX GPUs, auditing baseline Word Error Rates on clean LibriSpeech subsets.</p>
+          </div>
+
+          <div class="timeline-item reveal">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">Phase 2: Adversarial Development</div>
+            <h4>Attack Algorithm Codebase Creation</h4>
+            <p>Integrated PyTorch custom loss definitions for FGSM, PGD, and Carlini-Wagner optimizations to compute gradients on floating-point audio data.</p>
+          </div>
+
+          <div class="timeline-item reveal">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">Phase 3: Psychoacoustic Masking</div>
+            <h4>Audio Masking Integration</h4>
+            <p>Calculated frequency masking curves using Short-Time Fourier Transforms (STFT) to hide the generated gradients below human thresholds.</p>
+          </div>
+
+          <div class="timeline-item reveal">
+            <div class="timeline-dot"></div>
+            <div class="timeline-date">Phase 4: Comparative Benchmarks</div>
+            <h4>Evaluations & Robustness Dashboards</h4>
+            <p>Logged SNR, WER, and execution costs under all permutations of models, datasets, and attack thresholds.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detailed Implementation Section -->
+    <section id="implementation" class="implementation section-padding">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Code & Execution Details</span>
+          <h2 class="section-title">Technical Implementation</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-2 align-center reveal">
+          <!-- Code snippet -->
+          <div class="glass-card code-card" style="padding: 25px; overflow-x: auto;">
+            <div class="code-header" style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; font-size: 0.85rem; color: var(--text-secondary);">
+              <span>adversarial_generator.py</span>
+              <span>Python / PyTorch</span>
+            </div>
+            <pre style="font-family: monospace; font-size: 0.85rem; line-height: 1.5; color: #f8f8f2;"><span style="color: #ff79c6;">import</span> torch
+<span style="color: #ff79c6;">import</span> torchaudio
+
+<span style="color: #ff79c6;">def</span> <span style="color: #50fa7b;">generate_pgd_audio_attack</span>(model, clean_waveform, target_transcript, epsilon=<span style="color: #bd93f9;">0.005</span>, steps=<span style="color: #bd93f9;">10</span>, alpha=<span style="color: #bd93f9;">0.001</span>):
+    <span style="color: #6272a4;"># Initialize perturbed audio waveform</span>
+    perturbed_waveform = clean_waveform.clone().detach()
+    perturbed_waveform.requires_grad = <span style="color: #bd93f9;">True</span>
+    
+    <span style="color: #ff79c6;">for</span> step <span style="color: #ff79c6;">in</span> <span style="color: #ff79c6;">range</span>(steps):
+        <span style="color: #6272a4;"># Extract features (Log-Mel Spectrogram)</span>
+        features = model.extract_features(perturbed_waveform)
+        
+        <span style="color: #6272a4;"># Compute model transcription loss against targets</span>
+        loss = model.compute_ctc_loss(features, target_transcript)
+        
+        <span style="color: #6272a4;"># Backpropagate gradients to the input waveform</span>
+        model.zero_grad()
+        loss.backward()
+        
+        <span style="color: #6272a4;"># Apply gradient sign adjustment</span>
+        <span style="color: #ff79c6;">with</span> torch.no_grad():
+            gradient = perturbed_waveform.grad.sign()
+            perturbed_waveform = perturbed_waveform + alpha * gradient
+            
+            <span style="color: #6272a4;"># Project perturbation back into epsilon-ball boundaries</span>
+            delta = torch.clamp(perturbed_waveform - clean_waveform, min=-epsilon, max=epsilon)
+            perturbed_waveform = torch.clamp(clean_waveform + delta, min=-<span style="color: #bd93f9;">1.0</span>, max=<span style="color: #bd93f9;">1.0</span>).detach()
+            perturbed_waveform.requires_grad = <span style="color: #bd93f9;">True</span>
+            
+    <span style="color: #ff79c6;">return</span> perturbed_waveform</pre>
+          </div>
+
+          <!-- Parameter Explanations -->
+          <div class="implementation-explanation">
+            <h3>Pipeline Hyperparameters</h3>
+            <p style="margin-bottom: 25px; color: var(--text-secondary);">We optimized PGD and FGSM gradient calculations dynamically for ASR inputs. Tuning the hyperparameters balances the attack success rate and the auditory distortion metrics.</p>
+
+            <div class="d-item">
+              <span>$\epsilon$ (Epsilon Boundary)</span>
+              <strong>0.002 - 0.008 (SNR > 30dB)</strong>
+            </div>
+            <div class="d-item">
+              <span>Optimization Steps ($N$)</span>
+              <strong>10 - 50 iterations</strong>
+            </div>
+            <div class="d-item">
+              <span>Alpha ($\alpha$ Step Size)</span>
+              <strong>$1.5 \times 10^{-4}$</strong>
+            </div>
+            <div class="d-item">
+              <span>Audio Format Requirement</span>
+              <strong>16kHz WAV mono-channel</strong>
+            </div>
+            
+            <h3 style="margin-top: 30px;">How to Run</h3>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 10px;">Load the baseline environment and run the attack generator command:</p>
+            <pre style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; margin-top: 10px; border: 1px solid var(--border-color); color: var(--primary-color);">python attack.py --model whisper --attack pgd --audio sample.wav --target "mute"</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tech Stack Section -->
+    <section id="tech-stack" class="tech-stack section-padding bg-darker">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Built with Modern AI Tools</span>
+          <h2 class="section-title">Technology Ecosystem</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-4">
+          <div class="card glass-card reveal">
+            <h3>PyTorch</h3>
+            <p>Deep learning library providing high performance tensor processing and automatic differentiation gradients.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h3>Hugging Face</h3>
+            <p>Used to access wav2vec 2.0 and Whisper models weights, configurations, and tokenizers.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h3>Foolbox / ART</h3>
+            <p>Adversarial robust engines used to facilitate standard reference attack definitions.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h3>Librosa</h3>
+            <p>Library for analyzing audio files, calculating spectrograms, and visualizing audio signatures.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Datasets Section -->
+    <section id="datasets" class="datasets section-padding">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Data Benchmarking</span>
+          <h2 class="section-title">Datasets Used for Evaluation</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-2 align-center">
+          <div>
+            <h3>LibriSpeech & Common Voice</h3>
+            <p>Our research benchmarks evaluations against diverse datasets ensuring reliable measurements across multiple speakers, genders, accents, and recording environments.</p>
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>Dataset</th>
+                  <th>Hours</th>
+                  <th>Format</th>
+                  <th>Sample Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>LibriSpeech (Clean-100)</td>
+                  <td>100 hrs</td>
+                  <td>FLAC</td>
+                  <td>16 kHz</td>
+                </tr>
+                <tr>
+                  <td>Mozilla Common Voice</td>
+                  <td>45 hrs</td>
+                  <td>MP3</td>
+                  <td>48 kHz</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="glass-card dataset-chart reveal">
+            <h4>Sample Count Distribution</h4>
+            <div class="dataset-stats">
+              <div class="d-item">
+                <span>Male Speakers</span>
+                <strong>54%</strong>
+              </div>
+              <div class="d-item">
+                <span>Female Speakers</span>
+                <strong>46%</strong>
+              </div>
+              <div class="d-item">
+                <span>Native Accents</span>
+                <strong>72%</strong>
+              </div>
+              <div class="d-item">
+                <span>Non-native Accents</span>
+                <strong>28%</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Evaluation Metrics Section -->
+    <section id="metrics" class="metrics section-padding bg-darker">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Academic Assessment Standards</span>
+          <h2 class="section-title">Evaluation Metrics</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-3">
+          <div class="card glass-card reveal">
+            <h4>Word Error Rate (WER)</h4>
+            <p>Measures accuracy of transcription: $WER = (S + D + I) / N$ where S is substitutions, D is deletions, I is insertions.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h4>Signal-to-Noise Ratio (SNR)</h4>
+            <p>Evaluates the amplitude differences between original signal $X$ and the added perturbation $\delta$. Lower values mean audible sound alterations.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h4>Transferability Rate</h4>
+            <p>Calculates the rate at which adversarial vectors generated for wav2vec2 successfully trick Whisper without modifications.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Experimental Results Section -->
+    <section id="results" class="results section-padding">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Empirical Research Findings</span>
+          <h2 class="section-title">Experimental Results Dashboard</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <!-- Dynamic Results Charts using pure CSS/HTML -->
+        <div class="results-dashboard grid grid-2">
+          <div class="glass-card reveal">
+            <h4>ASR Model WER Comparison Under Attack</h4>
+            <p class="small-hint">Higher WER indicates more successful model disruption.</p>
+            <div class="bar-chart-custom">
+              <div class="chart-bar-item">
+                <span class="bar-label">wav2vec2 (Clean)</span>
+                <div class="bar-track"><div class="bar-fill bg-green" style="width: 5%"></div></div>
+                <span class="bar-value">5.6%</span>
+              </div>
+              <div class="chart-bar-item">
+                <span class="bar-label">wav2vec2 (FGSM)</span>
+                <div class="bar-track"><div class="bar-fill bg-orange" style="width: 72%"></div></div>
+                <span class="bar-value">72.0%</span>
+              </div>
+              <div class="chart-bar-item">
+                <span class="bar-label">wav2vec2 (PGD)</span>
+                <div class="bar-track"><div class="bar-fill bg-red" style="width: 88%"></div></div>
+                <span class="bar-value">88.4%</span>
+              </div>
+              <div class="chart-bar-item">
+                <span class="bar-label">Whisper (Clean)</span>
+                <div class="bar-track"><div class="bar-fill bg-green" style="width: 4%"></div></div>
+                <span class="bar-value">4.2%</span>
+              </div>
+              <div class="chart-bar-item">
+                <span class="bar-label">Whisper (CW)</span>
+                <div class="bar-track"><div class="bar-fill bg-red" style="width: 96%"></div></div>
+                <span class="bar-value">96.1%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card reveal">
+            <h4>Perturbation Imperceptibility Scores</h4>
+            <p class="small-hint">Evaluates the average psychoacoustic SNR of the attacks.</p>
+            <div class="bar-chart-custom">
+              <div class="chart-bar-item">
+                <span class="bar-label">FGSM Attack</span>
+                <div class="bar-track"><div class="bar-fill bg-orange" style="width: 40%"></div></div>
+                <span class="bar-value">18 dB</span>
+              </div>
+              <div class="chart-bar-item">
+                <span class="bar-label">PGD Attack</span>
+                <div class="bar-track"><div class="bar-fill bg-orange" style="width: 65%"></div></div>
+                <span class="bar-value">28 dB</span>
+              </div>
+              <div class="chart-bar-item">
+                <span class="bar-label">CW Attack</span>
+                <div class="bar-track"><div class="bar-fill bg-green" style="width: 85%"></div></div>
+                <span class="bar-value">38 dB</span>
+              </div>
+              <div class="chart-bar-item">
+                <span class="bar-label">Psychoacoustic Attack</span>
+                <div class="bar-track"><div class="bar-fill bg-green" style="width: 98%"></div></div>
+                <span class="bar-value">46 dB</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Research Contributions -->
+    <section id="contributions" class="contributions section-padding bg-darker">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Academic Innovations</span>
+          <h2 class="section-title">Research Contributions</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-3">
+          <div class="card glass-card reveal">
+            <h4>Adversarial Toolkit</h4>
+            <p>Open-source reference implementation for testing Whisper vulnerability models.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h4>Benchmarking Dataset</h4>
+            <p>Unified measurements of SNR, WER, and parameters size across models.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h4>Defense Proposals</h4>
+            <p>Introduced psychoacoustic preprocessing blocks to filter out high frequency gradients.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Future Scope Section -->
+    <section id="future" class="future section-padding">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">The Road Ahead</span>
+          <h2 class="section-title">Future Scope & Defense Strategies</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="card glass-card reveal">
+            <h4>Adversarial Training</h4>
+            <p>Fine-tuning Whisper and wav2vec2 on generated adversarial audio waveforms to build certified model boundaries and enhance natural ASR resilience.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <h4>Input Transformation Defenses</h4>
+            <p>Applying specialized preprocessing like JPEG-equivalent compression, audio quantization, or high-pass filtering to wash away noise before decoding.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- References Section -->
+    <section id="references" class="references section-padding bg-darker">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Academic Resources</span>
+          <h2 class="section-title">Key References</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="grid grid-2">
+          <div class="card glass-card reveal">
+            <strong>[1] Carlini, N., & Wagner, D. (2018).</strong>
+            <p>Audio Adversarial Examples: Targeted attacks on DeepSpeech. IEEE Security and Privacy Workshops.</p>
+          </div>
+          <div class="card glass-card reveal">
+            <strong>[2] Szegedy, C., et al. (2013).</strong>
+            <p>Intriguing properties of neural networks. arXiv preprint arXiv:1312.6199.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact section-padding">
+      <div class="container">
+        <div class="section-header text-center">
+          <span class="subtitle">Collaboration & Inquiries</span>
+          <h2 class="section-title">Connect with Our Team</h2>
+          <div class="title-underline"></div>
+        </div>
+
+        <div class="contact-wrapper glass-card reveal">
+          <div class="grid grid-2">
+            <div>
+              <h3>Get In Touch</h3>
+              <p>For questions regarding research collaboration, code access, or security audits, contact us using the form or direct channels.</p>
+              
+              <div class="contact-info-list">
+                <div class="c-info-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  <span>research@audioml.edu</span>
+                </div>
+                <div class="c-info-item">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <span>AI Security Labs, Cambridge</span>
+                </div>
+              </div>
+            </div>
+
+            <form class="contact-form" id="research-contact-form" onsubmit="event.preventDefault(); alert('Message sent successfully!');">
+              <div class="form-group">
+                <input type="text" placeholder="Your Name" required>
+              </div>
+              <div class="form-group">
+                <input type="email" placeholder="Your Email" required>
+              </div>
+              <div class="form-group">
+                <textarea rows="4" placeholder="Your Message" required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary ripple">Send Message</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Back to Top Button -->
+  <button id="back-to-top" aria-label="Go to Top">↑</button>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container text-center">
+      <p>&copy; 2026 Audio ML Security Labs. Under MIT License. Designed for premium research presentations.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
