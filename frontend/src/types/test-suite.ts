@@ -7,6 +7,13 @@ export interface TestSuite {
   created_at: string;
   updated_at: string;
   scenario_count: number;
+  suite_test_cases?: Array<{
+    id: string;
+    suite_id: string;
+    test_case_id: string;
+    execution_order: number;
+    test_case?: any;
+  }>;
 }
 
 export interface TestSuiteCreate {

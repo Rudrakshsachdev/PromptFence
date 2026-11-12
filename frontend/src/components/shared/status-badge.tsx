@@ -17,12 +17,27 @@ export function StatusBadge({
 }: StatusBadgeProps) {
   return (
     <Badge
-      variant={isActive ? 'success' : 'secondary'}
-      className={cn('font-medium text-[11px] px-2 py-0.5', className)}
+      variant="outline"
+      className={cn(
+        'inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium tracking-tight rounded-md border transition-colors',
+        isActive
+          ? 'bg-emerald-50/70 text-emerald-700 border-emerald-200/80 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/60'
+          : 'bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800/40 dark:text-slate-400 dark:border-slate-700/60',
+        className
+      )}
     >
-      <span className={cn('mr-1.5 h-1.5 w-1.5 rounded-full', isActive ? 'bg-emerald-500' : 'bg-slate-400')} />
-      {isActive ? activeText : inactiveText}
+      <span className="relative flex h-1.5 w-1.5">
+        {isActive && (
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+        )}
+        <span
+          className={cn(
+            'relative inline-flex h-1.5 w-1.5 rounded-full',
+            isActive ? 'bg-emerald-500' : 'bg-slate-400'
+          )}
+        />
+      </span>
+      <span>{isActive ? activeText : inactiveText}</span>
     </Badge>
   );
 }
-

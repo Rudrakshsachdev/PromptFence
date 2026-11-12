@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { CheckCircle2, ShieldCheck, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/forms/form-field';
@@ -38,13 +39,10 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
   });
-
-  const passwordVal = watch('password');
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
@@ -55,7 +53,7 @@ export default function RegisterPage() {
         full_name: data.full_name,
       });
       setIsSuccess(true);
-      toast.success('Registration successful!');
+      toast.success('Registration completed successfully');
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message || 'Registration failed');
@@ -69,19 +67,19 @@ export default function RegisterPage() {
 
   if (isSuccess) {
     return (
-      <div className="space-y-4 text-center py-4">
-        <div className="h-12 w-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center mx-auto">
-          ✓
+      <div className="text-center py-6 space-y-4">
+        <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200">
+          <CheckCircle2 className="h-6 w-6" />
         </div>
-        <h3 className="text-lg font-bold text-slate-900">Account Created</h3>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          We have sent an email verification link to your inbox. Please verify your address to activate your security testing privileges.
-        </p>
-        <div className="pt-4">
-          <Button asChild className="w-full">
-            <Link href="/login">Proceed to Sign In</Link>
-          </Button>
+        <div className="space-y-1">
+          <h3 className="text-base font-bold text-slate-900">Account Created</h3>
+          <p className="text-xs text-slate-500 max-w-xs mx-auto">
+            Your security researcher profile has been registered. You can now sign in to the portal.
+          </p>
         </div>
+        <Button asChild size="sm" className="w-full h-9 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white">
+          <Link href="/login">Proceed to Sign In</Link>
+        </Button>
       </div>
     );
   }
@@ -89,38 +87,46 @@ export default function RegisterPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Create Account</h2>
-        <p className="text-xs text-muted-foreground">
-          Register to begin security evaluation and target testing
+        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+          Create Researcher Account
+        </h2>
+        <p className="text-xs text-slate-500">
+          Join the PromptFence adversarial security testing platform
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5">
         <FormField label="Full Name" id="full_name" error={errors.full_name?.message} required>
           <Input
             id="full_name"
-            placeholder="Alice Researcher"
+            placeholder="Dr. Alex Rivera"
             {...register('full_name')}
             disabled={isLoading}
+            className="h-9 text-xs"
           />
         </FormField>
 
-        <FormField label="Email Address" id="email" error={errors.email?.message} required>
+        <FormField label="Work Email Address" id="email" error={errors.email?.message} required>
           <Input
             id="email"
             type="email"
-            placeholder="alice@example.com"
+            placeholder="alex.rivera@organization.com"
             {...register('email')}
             disabled={isLoading}
+            className="h-9 text-xs"
           />
         </FormField>
 
-        <FormField label="Password" id="password" error={errors.password?.message} required>
+        <FormField
+          label="Password"
+          id="password"
+          error={errors.password?.message}
+          required
+          helperText="Min. 8 characters with 1 uppercase letter and 1 number."
+        >
           <PasswordInput
             id="password"
-            placeholder="••••••••"
-            showStrength
-            value={passwordVal}
+            placeholder="••••••••••••"
             {...register('password')}
             disabled={isLoading}
           />
@@ -134,20 +140,33 @@ export default function RegisterPage() {
         >
           <PasswordInput
             id="confirm_password"
-            placeholder="••••••••"
+            placeholder="••••••••••••"
             {...register('confirm_password')}
             disabled={isLoading}
           />
         </FormField>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Creating Account...' : 'Register'}
+        <Button
+          type="submit"
+          className="w-full h-9 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-2xs mt-2"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <span className="flex items-center gap-1.5">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Registering Account...
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5">
+              <UserPlus className="h-3.5 w-3.5" /> Register Account
+            </span>
+          )}
         </Button>
       </form>
 
       <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800">
         <p className="text-xs text-slate-500">
-          Already registered?{' '}
+          Already have an account?{' '}
           <Link href="/login" className="text-teal-600 font-semibold hover:underline">
             Sign in
           </Link>
@@ -156,4 +175,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

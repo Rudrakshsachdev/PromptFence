@@ -6,10 +6,21 @@ import { useParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Globe,
+  History,
+  Lock,
+  Save,
+  ShieldCheck,
+  Sliders,
+} from 'lucide-react';
 import { FormField } from '@/components/forms/form-field';
 import { JsonEditor } from '@/components/forms/json-editor';
 import { KeyValueEditor } from '@/components/forms/key-value-editor';
 import { PageHeader } from '@/components/layout/page-header';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -23,7 +34,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useTarget, useUpdateTarget } from '@/hooks/use-targets';
-import { AuthenticationType, TargetType } from '@/types/target';
+import { toast } from 'sonner';
 
 const targetEditSchema = z.object({
   name: z.string().min(1, 'Target name is required').max(255),
@@ -53,33 +64,31 @@ export default function EditTargetPage() {
     register,
     handleSubmit,
     setValue,
-    reset,
     watch,
+    reset,
     formState: { errors },
   } = useForm<TargetEditValues>({
     resolver: zodResolver(targetEditSchema),
   });
+
+  const formValues = watch();
 
   useEffect(() => {
     if (target) {
       reset({
         name: target.name,
         description: target.description || '',
-        target_type: target.target_type,
+        target_type: target.target_type as any,
         base_url: target.base_url,
         endpoint: target.endpoint,
         http_method: target.http_method,
-        authentication_type: target.authentication_type,
+        authentication_type: target.authentication_type as any,
         timeout_seconds: target.timeout_seconds,
       });
       setHeadersConfig(target.headers_config || {});
       setRequestTemplate(target.request_template || null);
     }
   }, [target, reset]);
-
-  const targetType = watch('target_type');
-  const authType = watch('authentication_type');
-  const httpMethod = watch('http_method');
 
   const onSubmit = (values: TargetEditValues) => {
     updateMutation.mutate(
@@ -89,8 +98,12 @@ export default function EditTargetPage() {
         request_template: requestTemplate || undefined,
       },
       {
-        onSuccess: () => {
+        onSuccess: (updated) => {
+          toast.success('Target configuration updated and new version snapshot created');
           router.push(`/targets/${targetId}`);
+        },
+        onError: (err: any) => {
+          toast.error(err.message || 'Failed to update target configuration');
         },
       }
     );
@@ -98,133 +111,204 @@ export default function EditTargetPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-4xl">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-72 w-full" />
+      <div className="space-y-6 max-w-4xl mx-auto">
+        <Skeleton className="h-8 w-44" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div>
+        <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs text-slate-500">
+          <Link href={`/targets/${targetId}`}>
+            <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Back to Target Details
+          </Link>
+        </Button>
+      </div>
+
       <PageHeader
         title={`Edit Target: ${target?.name}`}
-        description="Updating configuration automatically generates a new version snapshot in the audit log."
+        description="Update endpoint connectivity, custom headers, or request body. Changes create a new immutable version snapshot."
+        badge={
+          <Badge variant="outline" className="text-[10px] font-mono bg-teal-50 text-teal-700 border-teal-200">
+            Immutable Versioning Active
+          </Badge>
+        }
       />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Target Information</CardTitle>
+        {/* Section 1: General Info */}
+        <Card className="border border-slate-200/80 bg-white shadow-2xs">
+          <CardHeader className="pb-3 border-b border-slate-100">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Sliders className="h-4 w-4 text-teal-600" />
+              <span>Target Identity & Architecture</span>
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             <FormField label="Target Name" id="name" error={errors.name?.message} required>
-              <Input id="name" {...register('name')} />
+              <Input id="name" {...register('name')} className="h-9 text-xs" />
             </FormField>
 
             <FormField label="Description" id="description" error={errors.description?.message}>
-              <Textarea id="description" {...register('description')} />
+              <Textarea id="description" {...register('description')} className="text-xs min-h-[70px]" />
             </FormField>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField label="Architecture Type" id="target_type" error={errors.target_type?.message} required>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                  Architecture Type
+                </label>
                 <Select
-                  value={targetType}
-                  onValueChange={(val) => setValue('target_type', val as TargetType)}
+                  value={formValues.target_type}
+                  onValueChange={(val) => setValue('target_type', val as any)}
                 >
-                  <SelectTrigger id="target_type">
+                  <SelectTrigger className="h-9 text-xs bg-white">
                     <SelectValue placeholder="Architecture" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="CHAT_API">Chat API</SelectItem>
                     <SelectItem value="COMPLETION_API">Completion API</SelectItem>
-                    <SelectItem value="AGENT_API">Agent API</SelectItem>
-                    <SelectItem value="CUSTOM">Custom Integration</SelectItem>
+                    <SelectItem value="AGENT_API">AI Agent Endpoint</SelectItem>
+                    <SelectItem value="CUSTOM">Custom API</SelectItem>
                   </SelectContent>
                 </Select>
-              </FormField>
+              </div>
 
-              <FormField label="Timeout (Seconds)" id="timeout_seconds" error={errors.timeout_seconds?.message}>
-                <Input id="timeout_seconds" type="number" min={1} max={300} {...register('timeout_seconds')} />
-              </FormField>
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                  Authentication Type
+                </label>
+                <Select
+                  value={formValues.authentication_type}
+                  onValueChange={(val) => setValue('authentication_type', val as any)}
+                >
+                  <SelectTrigger className="h-9 text-xs bg-white">
+                    <SelectValue placeholder="Auth Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="NONE">None</SelectItem>
+                    <SelectItem value="BEARER">Bearer Token</SelectItem>
+                    <SelectItem value="API_KEY">API Key Header</SelectItem>
+                    <SelectItem value="BASIC">Basic Auth</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">Routing & Authentication</CardTitle>
+        {/* Section 2: Connection Parameters */}
+        <Card className="border border-slate-200/80 bg-white shadow-2xs">
+          <CardHeader className="pb-3 border-b border-slate-100">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Globe className="h-4 w-4 text-teal-600" />
+              <span>Connection Parameters</span>
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
                 <FormField label="Base URL" id="base_url" error={errors.base_url?.message} required>
-                  <Input id="base_url" {...register('base_url')} />
+                  <Input id="base_url" {...register('base_url')} className="h-9 text-xs font-mono" />
                 </FormField>
               </div>
               <div>
-                <FormField label="HTTP Method" id="http_method" error={errors.http_method?.message} required>
-                  <Select value={httpMethod} onValueChange={(val) => setValue('http_method', val)}>
-                    <SelectTrigger id="http_method">
-                      <SelectValue placeholder="Method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="POST">POST</SelectItem>
-                      <SelectItem value="GET">GET</SelectItem>
-                      <SelectItem value="PUT">PUT</SelectItem>
-                      <SelectItem value="PATCH">PATCH</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <FormField label="Endpoint Path" id="endpoint" error={errors.endpoint?.message} required>
+                  <Input id="endpoint" {...register('endpoint')} className="h-9 text-xs font-mono" />
                 </FormField>
               </div>
             </div>
 
-            <FormField label="Endpoint Path" id="endpoint" error={errors.endpoint?.message} required>
-              <Input id="endpoint" {...register('endpoint')} />
-            </FormField>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                  HTTP Method
+                </label>
+                <Select
+                  value={formValues.http_method}
+                  onValueChange={(val) => setValue('http_method', val)}
+                >
+                  <SelectTrigger className="h-9 text-xs bg-white">
+                    <SelectValue placeholder="Method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="POST">POST</SelectItem>
+                    <SelectItem value="GET">GET</SelectItem>
+                    <SelectItem value="PUT">PUT</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <FormField label="Authentication Mode" id="authentication_type">
-              <Select
-                value={authType}
-                onValueChange={(val) => setValue('authentication_type', val as AuthenticationType)}
+              <FormField
+                label="Timeout (Seconds)"
+                id="timeout_seconds"
+                error={errors.timeout_seconds?.message}
+                required
               >
-                <SelectTrigger id="authentication_type">
-                  <SelectValue placeholder="Auth Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="NONE">None / Open</SelectItem>
-                  <SelectItem value="BEARER">Bearer Token</SelectItem>
-                  <SelectItem value="API_KEY">API Key Header</SelectItem>
-                  <SelectItem value="BASIC">HTTP Basic Auth</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormField>
-
-            <div className="pt-2">
-              <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2 dark:text-slate-300">
-                Custom Headers
-              </p>
-              <KeyValueEditor value={headersConfig} onChange={setHeadersConfig} />
-            </div>
-
-            <div className="pt-2">
-              <FormField label="Payload Template" id="request_template">
-                <JsonEditor value={requestTemplate} onChange={setRequestTemplate} />
+                <Input
+                  id="timeout_seconds"
+                  type="number"
+                  min={1}
+                  max={300}
+                  {...register('timeout_seconds')}
+                  className="h-9 text-xs font-mono"
+                />
               </FormField>
             </div>
           </CardContent>
         </Card>
 
-        <div className="flex items-center justify-end space-x-3">
-          <Button variant="outline" asChild>
+        {/* Section 3: Headers & Payload */}
+        <Card className="border border-slate-200/80 bg-white shadow-2xs">
+          <CardHeader className="pb-3 border-b border-slate-100">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Lock className="h-4 w-4 text-teal-600" />
+              <span>Headers & Payload Schema</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-700 block mb-1.5">
+                Configured HTTP Headers
+              </label>
+              <KeyValueEditor
+                value={headersConfig}
+                onChange={setHeadersConfig}
+                keyPlaceholder="Header Name"
+                valuePlaceholder="Header Value"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-slate-700">Request Body Template</label>
+                <span className="text-[10px] text-teal-700 font-mono">Placeholders: {'{{prompt}}'}</span>
+              </div>
+              <JsonEditor value={requestTemplate} onChange={setRequestTemplate} height="150px" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Actions Bar */}
+        <div className="flex items-center justify-between pt-2">
+          <Button asChild variant="outline" size="sm" className="h-8 text-xs">
             <Link href={`/targets/${targetId}`}>Cancel</Link>
           </Button>
-          <Button type="submit" disabled={updateMutation.isPending}>
-            {updateMutation.isPending ? 'Saving Changes...' : 'Save & Increment Version'}
+
+          <Button
+            type="submit"
+            disabled={updateMutation.isPending}
+            size="sm"
+            className="h-8 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-2xs"
+          >
+            <Save className="h-3.5 w-3.5 mr-1.5" />
+            {updateMutation.isPending ? 'Updating...' : 'Save Changes as New Version'}
           </Button>
         </div>
       </form>
     </div>
   );
 }
-

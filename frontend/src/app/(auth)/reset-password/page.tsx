@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { KeyRound, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/forms/form-field';
 import { PasswordInput } from '@/components/forms/password-input';
@@ -58,7 +59,7 @@ export default function ResetPasswordPage() {
         token,
         new_password: data.new_password,
       });
-      toast.success('Password updated successfully! Please log in.');
+      toast.success('Password updated successfully! Please sign in.');
       router.push('/login');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -74,17 +75,25 @@ export default function ResetPasswordPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">New Password</h2>
-        <p className="text-xs text-muted-foreground">
+        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+          Set New Password
+        </h2>
+        <p className="text-xs text-slate-500">
           Enter and confirm your new secure password
         </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <FormField label="New Password" id="new_password" error={errors.new_password?.message} required>
+        <FormField
+          label="New Password"
+          id="new_password"
+          error={errors.new_password?.message}
+          required
+          helperText="Min. 8 characters with 1 uppercase letter and 1 number."
+        >
           <PasswordInput
             id="new_password"
-            placeholder="••••••••"
+            placeholder="••••••••••••"
             showStrength
             value={passwordVal}
             {...register('new_password')}
@@ -100,17 +109,20 @@ export default function ResetPasswordPage() {
         >
           <PasswordInput
             id="confirm_password"
-            placeholder="••••••••"
+            placeholder="••••••••••••"
             {...register('confirm_password')}
             disabled={isLoading}
           />
         </FormField>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Resetting Password...' : 'Save New Password'}
+        <Button
+          type="submit"
+          className="w-full h-9 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-2xs mt-2"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Updating Credentials...' : 'Save New Password'}
         </Button>
       </form>
     </div>
   );
 }
-

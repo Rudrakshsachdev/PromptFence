@@ -66,12 +66,12 @@ async def seed() -> None:
 
         logger.info("Seeding default administrator user...")
         from sqlalchemy import select
-        res = await db.execute(select(User).where(User.email == "admin@promptfence.local"))
+        res = await db.execute(select(User).where(User.email == "admin@promptfence.internal"))
         admin = res.scalar_one_or_none()
         if not admin:
             admin = User(
-                email="admin@promptfence.local",
-                password_hash=hash_password("AdminPassword123!"),
+                email="admin@promptfence.internal",
+                password_hash=hash_password("AdminSecurePass123!"),
                 full_name="System Administrator",
                 is_active=True,
                 is_verified=True,
@@ -82,15 +82,15 @@ async def seed() -> None:
             admin_role = role_map[RoleType.ADMIN.value]
             db.add(UserRole(user_id=admin.id, role_id=admin_role.id))
             await db.flush()
-            logger.info("Created admin user: admin@promptfence.local (Password: AdminPassword123!)")
+            logger.info("Created admin user: admin@promptfence.internal (Password: AdminSecurePass123!)")
 
         logger.info("Seeding security researcher user...")
-        res = await db.execute(select(User).where(User.email == "researcher@promptfence.local"))
+        res = await db.execute(select(User).where(User.email == "researcher@promptfence.internal"))
         researcher = res.scalar_one_or_none()
         if not researcher:
             researcher = User(
-                email="researcher@promptfence.local",
-                password_hash=hash_password("ResearcherPassword123!"),
+                email="researcher@promptfence.internal",
+                password_hash=hash_password("ResearcherPass123!"),
                 full_name="Alice Researcher",
                 is_active=True,
                 is_verified=True,
@@ -100,7 +100,7 @@ async def seed() -> None:
             researcher_role = role_map[RoleType.SECURITY_RESEARCHER.value]
             db.add(UserRole(user_id=researcher.id, role_id=researcher_role.id))
             await db.flush()
-            logger.info("Created researcher user: researcher@promptfence.local (Password: ResearcherPassword123!)")
+            logger.info("Created researcher user: researcher@promptfence.internal (Password: ResearcherPass123!)")
 
         logger.info("Seeding scenario library templates...")
         sample_scenarios = [

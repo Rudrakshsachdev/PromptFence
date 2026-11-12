@@ -8,6 +8,7 @@ interface JsonEditorProps {
   value?: Record<string, unknown> | null;
   onChange: (value: Record<string, unknown> | null) => void;
   placeholder?: string;
+  height?: string;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ export function JsonEditor({
   value,
   onChange,
   placeholder = '{\n  "key": "value"\n}',
+  height,
   className,
 }: JsonEditorProps) {
   const [text, setText] = useState(() => (value ? JSON.stringify(value, null, 2) : ''));
@@ -53,8 +55,9 @@ export function JsonEditor({
         value={text}
         onChange={handleChange}
         placeholder={placeholder}
+        style={height ? { minHeight: height, height } : undefined}
         className={cn(
-          'font-mono text-xs min-h-[140px] leading-relaxed',
+          'font-mono text-xs min-h-[140px] leading-relaxed bg-slate-900 text-teal-300 border-slate-800 focus-visible:ring-teal-500/40 p-3',
           error && 'border-red-500 focus-visible:ring-red-500',
           className
         )}
@@ -63,4 +66,3 @@ export function JsonEditor({
     </div>
   );
 }
-

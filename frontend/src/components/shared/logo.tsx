@@ -10,17 +10,32 @@ interface LogoProps {
 
 export function Logo({ className, collapsed = false }: LogoProps) {
   return (
-    <Link href="/overview" className={cn('flex items-center space-x-2.5 font-bold tracking-tight', className)}>
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-600 text-white shadow-sm">
-        <ShieldAlert className="h-5 w-5" />
+    <Link
+      href="/overview"
+      className={cn(
+        'group flex items-center space-x-2.5 transition-opacity hover:opacity-90',
+        className
+      )}
+    >
+      <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-teal-400 shadow-sm ring-1 ring-slate-800/60 transition-transform group-hover:scale-105">
+        <ShieldAlert className="h-4 w-4" />
+        <span className="absolute -bottom-0.5 -right-0.5 flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-teal-400 opacity-60"></span>
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-teal-500"></span>
+        </span>
       </div>
       {!collapsed && (
         <div className="flex flex-col">
-          <span className="text-base text-slate-900 font-extrabold tracking-tight dark:text-white">PromptFence</span>
-          <span className="text-[10px] font-medium text-slate-500 uppercase tracking-widest -mt-1">Security Lab</span>
+          <div className="flex items-center space-x-1.5">
+            <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white">
+              Prompt<span className="text-teal-600 dark:text-teal-400">Fence</span>
+            </span>
+          </div>
+          <span className="text-[9px] font-semibold tracking-wider text-slate-400 uppercase -mt-0.5">
+            AI Security Lab
+          </span>
         </div>
       )}
     </Link>
   );
 }
-

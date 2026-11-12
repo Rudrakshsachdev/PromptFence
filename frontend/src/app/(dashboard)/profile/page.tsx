@@ -4,11 +4,17 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { KeyRound, Laptop, LogOut, ShieldCheck, User } from 'lucide-react';
+import {
+  CheckCircle2,
+  KeyRound,
+  Lock,
+  Save,
+  ShieldCheck,
+  User as UserIcon,
+} from 'lucide-react';
 import { FormField } from '@/components/forms/form-field';
 import { PasswordInput } from '@/components/forms/password-input';
 import { PageHeader } from '@/components/layout/page-header';
-import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +23,6 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/use-auth';
 import { formatDate } from '@/lib/utils';
 import { authService } from '@/services/auth.service';
-import { Session } from '@/types/auth';
 import { toast } from 'sonner';
 
 const profileSchema = z.object({
@@ -44,12 +49,9 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export default function ProfilePage() {
-  const { user, refreshUser, logout } = useAuth();
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
+  const { user, refreshUser } = useAuth();
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [sessionToRevoke, setSessionToRevoke] = useState<Session | null>(null);
 
   const {
     register: registerProfile,
@@ -72,25 +74,12 @@ export default function ProfilePage() {
 
   const newPasswordVal = watchPassword('new_password');
 
-  const loadSessions = async () => {
-    setIsLoadingSessions(true);
-    try {
-      const data = await authService.getSessions();
-      setSessions(data);
-    } catch {
-      // Ignore if session call fails
-    } finally {
-      setIsLoadingSessions(false);
-    }
-  };
-
   useEffect(() => {
     if (user) {
       resetProfile({
         full_name: user.full_name,
         avatar_url: user.avatar_url || '',
       });
-      loadSessions();
     }
   }, [user, resetProfile]);
 
@@ -102,7 +91,7 @@ export default function ProfilePage() {
         avatar_url: values.avatar_url || undefined,
       });
       await refreshUser();
-      toast.success('Profile details saved successfully');
+      toast.success('Profile details updated successfully');
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message || 'Failed to update profile');
@@ -121,7 +110,6 @@ export default function ProfilePage() {
       });
       resetPassword();
       toast.success('Password changed successfully. All other sessions have been logged out.');
-      loadSessions();
     } catch (err: unknown) {
       if (err instanceof Error) {
         toast.error(err.message || 'Failed to change password');
@@ -131,217 +119,175 @@ export default function ProfilePage() {
     }
   };
 
-  const onRevokeSession = async (sessionId: string) => {
-    try {
-      await authService.revokeSession(sessionId);
-      toast.success('Session revoked');
-      loadSessions();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        toast.error(err.message || 'Failed to revoke session');
-      }
-    } finally {
-      setSessionToRevoke(null);
-    }
-  };
-
-  const onLogoutAll = async () => {
-    try {
-      await authService.logoutAll();
-      toast.success('Logged out from all devices');
-      logout();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        toast.error(err.message || 'Failed to terminate all sessions');
-      }
-    }
-  };
-
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <PageHeader
-        title="Account Profile & Security"
-        description="Manage your credentials, active browser sessions, and personal identity."
+        title="User Profile"
+        description="Manage your identity credentials, role permissions, and access password."
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* User Card */}
-        <Card className="md:col-span-1">
-          <CardHeader className="text-center pb-2">
-            <div className="h-20 w-20 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-2xl uppercase mx-auto mb-3">
-              {user?.full_name ? user.full_name[0] : 'U'}
-            </div>
-            <CardTitle className="text-lg">{user?.full_name}</CardTitle>
-            <p className="text-xs text-muted-foreground">{user?.email}</p>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-4 text-xs">
-            <Separator />
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500">Email Status:</span>
-              <Badge variant={user?.is_verified ? 'success' : 'warning'}>
-                {user?.is_verified ? 'Verified' : 'Unverified'}
-              </Badge>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500">Assigned Roles:</span>
-              <div className="flex gap-1">
-                {user?.roles?.map((r) => (
-                  <Badge key={r} variant="outline" className="font-mono text-[10px]">
-                    {r}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500">Member Since:</span>
-              <span className="font-medium text-slate-700">{formatDate(user?.created_at)}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Profile Update Form */}
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold flex items-center">
-              <User className="h-4 w-4 mr-2 text-teal-600" /> Personal Identity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmitProfile(onUpdateProfile)} className="space-y-4">
-              <FormField label="Full Name" id="full_name" error={profileErrors.full_name?.message} required>
-                <Input id="full_name" {...registerProfile('full_name')} />
-              </FormField>
-
-              <FormField
-                label="Avatar URL (Optional)"
-                id="avatar_url"
-                error={profileErrors.avatar_url?.message}
-                description="Link to an external profile avatar image"
-              >
-                <Input id="avatar_url" placeholder="https://..." {...registerProfile('avatar_url')} />
-              </FormField>
-
-              <div className="flex justify-end pt-2">
-                <Button type="submit" size="sm" disabled={isUpdatingProfile}>
-                  {isUpdatingProfile ? 'Saving...' : 'Save Profile Changes'}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Change Password Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold flex items-center">
-            <KeyRound className="h-4 w-4 mr-2 text-teal-600" /> Change Password
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmitPassword(onChangePassword)} className="space-y-4 max-w-md">
-            <FormField
-              label="Current Password"
-              id="current_password"
-              error={passwordErrors.current_password?.message}
-              required
-            >
-              <PasswordInput id="current_password" {...registerPassword('current_password')} />
-            </FormField>
-
-            <FormField
-              label="New Password"
-              id="new_password"
-              error={passwordErrors.new_password?.message}
-              required
-            >
-              <PasswordInput
-                id="new_password"
-                showStrength
-                value={newPasswordVal}
-                {...registerPassword('new_password')}
-              />
-            </FormField>
-
-            <FormField
-              label="Confirm New Password"
-              id="confirm_password"
-              error={passwordErrors.confirm_password?.message}
-              required
-            >
-              <PasswordInput id="confirm_password" {...registerPassword('confirm_password')} />
-            </FormField>
-
-            <div className="pt-2">
-              <Button type="submit" size="sm" disabled={isChangingPassword}>
-                {isChangingPassword ? 'Updating Password...' : 'Update Password'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Active Browser Sessions */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base font-semibold flex items-center">
-              <Laptop className="h-4 w-4 mr-2 text-teal-600" /> Active Device Sessions
-            </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">
-              Devices currently signed in with active refresh tokens
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={onLogoutAll} className="text-red-600">
-            <LogOut className="h-3.5 w-3.5 mr-1.5" /> Sign Out All Devices
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {sessions.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">No active sessions found.</p>
-          ) : (
-            sessions.map((sess) => (
-              <div
-                key={sess.id}
-                className="flex items-center justify-between p-3 border rounded-lg bg-slate-50/50 dark:bg-slate-900"
-              >
-                <div className="space-y-1">
-                  <p className="font-semibold text-xs text-slate-800 dark:text-slate-200">
-                    {sess.device_info || 'Browser Session'}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Connected: {formatDate(sess.created_at)}
-                    {sess.last_used_at && ` • Last active: ${formatDate(sess.last_used_at)}`}
-                  </p>
+        {/* Left Column: User Identity Card */}
+        <div className="space-y-6">
+          <Card className="border border-slate-200/80 bg-white shadow-2xs">
+            <CardHeader className="text-center pb-2">
+              <div className="relative mx-auto mb-3">
+                <div className="h-20 w-20 rounded-full bg-slate-900 text-teal-400 flex items-center justify-center font-bold text-2xl uppercase border-2 border-teal-500/20 shadow-xs">
+                  {user?.full_name ? user.full_name[0] : 'U'}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSessionToRevoke(sess)}
-                  className="text-xs text-slate-500 hover:text-red-600"
-                >
-                  Revoke
-                </Button>
+                <span className="absolute bottom-1 right-1 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-white" />
               </div>
-            ))
-          )}
-        </CardContent>
-      </Card>
+              <CardTitle className="text-base font-bold text-slate-900">
+                {user?.full_name || 'Security Researcher'}
+              </CardTitle>
+              <p className="text-xs font-mono text-slate-400">{user?.email}</p>
+              <div className="pt-2 flex justify-center">
+                <Badge variant="outline" className="text-[10px] font-mono bg-teal-50 text-teal-700 border-teal-200">
+                  Active Member
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-3 text-xs border-t border-slate-100">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Account ID:</span>
+                <span className="font-mono text-[10px] text-slate-600 truncate max-w-[120px]">
+                  {user?.id}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Verified:</span>
+                <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Confirmed
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Password Cipher:</span>
+                <span className="font-mono text-slate-700 text-[11px]">Argon2id (RFC 9106)</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      <ConfirmDialog
-        open={!!sessionToRevoke}
-        onOpenChange={(open) => !open && setSessionToRevoke(null)}
-        title="Revoke Session"
-        description="Terminating this session will immediately disconnect the device."
-        confirmText="Revoke Session"
-        variant="destructive"
-        onConfirm={() => {
-          if (sessionToRevoke) {
-            onRevokeSession(sessionToRevoke.id);
-          }
-        }}
-      />
+        {/* Right Column: Forms */}
+        <div className="md:col-span-2 space-y-6">
+          {/* Edit Profile Details */}
+          <Card className="border border-slate-200/80 bg-white shadow-2xs">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <UserIcon className="h-4 w-4 text-teal-600" />
+                <span>General Profile Details</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <form onSubmit={handleSubmitProfile(onUpdateProfile)} className="space-y-4">
+                <FormField
+                  label="Full Name"
+                  id="full_name"
+                  error={profileErrors.full_name?.message}
+                  required
+                >
+                  <Input id="full_name" {...registerProfile('full_name')} className="h-9 text-xs" />
+                </FormField>
+
+                <FormField
+                  label="Work Email Address"
+                  id="email_disabled"
+                  helperText="Primary email cannot be changed without re-verification."
+                >
+                  <Input
+                    id="email_disabled"
+                    value={user?.email || ''}
+                    disabled
+                    className="h-9 text-xs font-mono bg-slate-50 text-slate-500 cursor-not-allowed"
+                  />
+                </FormField>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    type="submit"
+                    disabled={isUpdatingProfile}
+                    size="sm"
+                    className="h-8 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-2xs"
+                  >
+                    <Save className="h-3.5 w-3.5 mr-1.5" />
+                    {isUpdatingProfile ? 'Saving...' : 'Save Profile Details'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Change Password */}
+          <Card className="border border-slate-200/80 bg-white shadow-2xs">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-teal-600" />
+                <span>Change Account Password</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <form onSubmit={handleSubmitPassword(onChangePassword)} className="space-y-4">
+                <FormField
+                  label="Current Password"
+                  id="current_password"
+                  error={passwordErrors.current_password?.message}
+                  required
+                >
+                  <PasswordInput
+                    id="current_password"
+                    placeholder="••••••••••••"
+                    {...registerPassword('current_password')}
+                    disabled={isChangingPassword}
+                  />
+                </FormField>
+
+                <FormField
+                  label="New Secure Password"
+                  id="new_password"
+                  error={passwordErrors.new_password?.message}
+                  required
+                  helperText="Min. 8 characters with 1 uppercase letter and 1 number."
+                >
+                  <PasswordInput
+                    id="new_password"
+                    placeholder="••••••••••••"
+                    showStrength
+                    value={newPasswordVal}
+                    {...registerPassword('new_password')}
+                    disabled={isChangingPassword}
+                  />
+                </FormField>
+
+                <FormField
+                  label="Confirm New Password"
+                  id="confirm_password"
+                  error={passwordErrors.confirm_password?.message}
+                  required
+                >
+                  <PasswordInput
+                    id="confirm_password"
+                    placeholder="••••••••••••"
+                    {...registerPassword('confirm_password')}
+                    disabled={isChangingPassword}
+                  />
+                </FormField>
+
+                <div className="flex justify-end pt-2">
+                  <Button
+                    type="submit"
+                    disabled={isChangingPassword}
+                    size="sm"
+                    className="h-8 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-2xs"
+                  >
+                    <Lock className="h-3.5 w-3.5 mr-1.5" />
+                    {isChangingPassword ? 'Changing Password...' : 'Update Password'}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
-
