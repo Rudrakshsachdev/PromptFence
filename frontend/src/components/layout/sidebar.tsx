@@ -4,9 +4,11 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Crosshair,
+  FlaskConical,
   FolderKanban,
   LayoutDashboard,
   LogOut,
@@ -26,6 +28,8 @@ const iconMap: Record<string, React.ElementType> = {
   Crosshair,
   FolderKanban,
   ShieldAlert,
+  FlaskConical,
+  AlertTriangle,
   User: UserIcon,
   Settings,
 };

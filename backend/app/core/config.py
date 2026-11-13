@@ -22,6 +22,17 @@ class Settings(BaseSettings):
     APP_SECRET_KEY: str = "change-me-in-production-use-a-long-random-string"
     DEBUG: bool = False
 
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def normalize_debug(cls, v: object) -> bool:
+        if isinstance(v, bool):
+            return v
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "t", "yes", "y", "debug")
+        if isinstance(v, (int, float)):
+            return bool(v)
+        return False
+
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://promptfence:promptfence@localhost:5432/promptfence"
 
@@ -73,6 +84,21 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_REQUESTS: int = 100
     RATE_LIMIT_WINDOW_SECONDS: int = 60
+
+    # Phase 2 — Dynamic Canary & Security Engine
+    CANARY_HMAC_KEY: str = ""
+    CANARY_KEY_VERSION: str = "v1"
+    CANARY_DEFAULT_TTL_MINUTES: int = 120
+
+    # SSRF Protection Configuration
+    SSRF_ALLOW_PRIVATE_IPS: bool = False
+    SSRF_DNS_TIMEOUT_SECONDS: float = 3.0
+
+    # Execution Engine Configuration
+    EXECUTION_DEFAULT_TIMEOUT_SECONDS: int = 30
+    EXECUTION_MAX_CONCURRENCY: int = 5
+    EXECUTION_MAX_CASES_PER_RUN: int = 100
+    EXECUTION_MAX_RESPONSE_BYTES: int = 1024 * 1024  # 1MB limit for target response
 
     @property
     def is_production(self) -> bool:

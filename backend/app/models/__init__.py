@@ -6,6 +6,24 @@ from app.models.session import RefreshToken, PasswordResetToken, EmailVerificati
 from app.models.target import Target, TargetVersion, TargetType, AuthenticationType
 from app.models.test_suite import TestSuite
 from app.models.test_case import TestCase, SuiteTestCase, TestCaseCategory, TestCaseSeverity
+from app.models.execution import (
+    TestRun,
+    TestRunCase,
+    DynamicCanary,
+    ExecutionEvent,
+    ExecutionLog,
+    TaintFinding,
+    AssertionResult,
+    TargetTrace,
+    TestRunStatus,
+    TestCaseExecutionStatus,
+    CanaryStatus,
+    EventType,
+    AttributionLevel,
+    FindingSeverity,
+    AssertionType,
+    AssertionStatus,
+)
 
 __all__ = [
     "User",
@@ -25,4 +43,20 @@ __all__ = [
     "SuiteTestCase",
     "TestCaseCategory",
     "TestCaseSeverity",
+    "TestRun",
+    "TestRunCase",
+    "DynamicCanary",
+    "ExecutionEvent",
+    "ExecutionLog",
+    "TaintFinding",
+    "AssertionResult",
+    "TargetTrace",
+    "TestRunStatus",
+    "TestCaseExecutionStatus",
+    "CanaryStatus",
+    "EventType",
+    "AttributionLevel",
+    "FindingSeverity",
+    "AssertionType",
+    "AssertionStatus",
 ]

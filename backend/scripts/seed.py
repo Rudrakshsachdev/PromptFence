@@ -169,6 +169,75 @@ async def seed() -> None:
             created_scenarios.append(tc)
 
         logger.info("Seeding demo AI target application...")
+        # Target 1: Secure Mock Target
+        res = await db.execute(
+            select(Target).where(Target.name == "Mock Secure Target (Guarded AI)", Target.owner_id == researcher.id)
+        )
+        secure_target = res.scalar_one_or_none()
+        if not secure_target:
+            secure_target = Target(
+                owner_id=researcher.id,
+                name="Mock Secure Target (Guarded AI)",
+                description="Demonstration secure target upholding instruction boundaries, canary containment, and strict tool authorization.",
+                target_type=TargetType.CHAT_API,
+                base_url="http://mock.internal",
+                endpoint="/v1/chat",
+                http_method="POST",
+                authentication_type=AuthenticationType.BEARER,
+                headers_config={"mock_mode": "secure"},
+                request_template={"prompt": "{prompt}"},
+                timeout_seconds=15,
+                is_active=True,
+            )
+            db.add(secure_target)
+            await db.flush()
+            db.add(TargetVersion(
+                target_id=secure_target.id,
+                version_number=1,
+                configuration_snapshot={
+                    "name": secure_target.name,
+                    "target_type": secure_target.target_type.value,
+                    "base_url": secure_target.base_url,
+                    "endpoint": secure_target.endpoint,
+                    "mock_mode": "secure",
+                }
+            ))
+
+        # Target 2: Vulnerable Mock Target
+        res = await db.execute(
+            select(Target).where(Target.name == "Mock Vulnerable Target (Adversarial Lab)", Target.owner_id == researcher.id)
+        )
+        vulnerable_target = res.scalar_one_or_none()
+        if not vulnerable_target:
+            vulnerable_target = Target(
+                owner_id=researcher.id,
+                name="Mock Vulnerable Target (Adversarial Lab)",
+                description="Demonstration vulnerable target susceptible to indirect prompt injection, canary leakage, and unauthorized tool calls.",
+                target_type=TargetType.CHAT_API,
+                base_url="http://mock.internal",
+                endpoint="/v1/chat",
+                http_method="POST",
+                authentication_type=AuthenticationType.BEARER,
+                headers_config={"mock_mode": "vulnerable"},
+                request_template={"prompt": "{prompt}"},
+                timeout_seconds=15,
+                is_active=True,
+            )
+            db.add(vulnerable_target)
+            await db.flush()
+            db.add(TargetVersion(
+                target_id=vulnerable_target.id,
+                version_number=1,
+                configuration_snapshot={
+                    "name": vulnerable_target.name,
+                    "target_type": vulnerable_target.target_type.value,
+                    "base_url": vulnerable_target.base_url,
+                    "endpoint": vulnerable_target.endpoint,
+                    "mock_mode": "vulnerable",
+                }
+            ))
+
+        # Target 3: External HTTP target
         res = await db.execute(
             select(Target).where(Target.name == "Demo Chatbot Endpoint", Target.owner_id == researcher.id)
         )

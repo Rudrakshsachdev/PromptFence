@@ -129,3 +129,53 @@ async def update_scenario_status(
     tc = await test_case_service.update_status(scenario_id, current_user, roles, data.is_enabled)
     return TestCaseResponse.model_validate(tc)
 
+
+@router.post("/{scenario_id}/validate")
+async def validate_scenario(
+    scenario_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Validate scenario configuration for executable completeness."""
+    test_case_service = TestCaseService(db)
+    roles = await _get_user_roles(current_user, db)
+    tc = await test_case_service.get_test_case(scenario_id, current_user, roles)
+    
+    issues = []
+    if not tc.attack_input_template:
+        issues.append("Missing attack input template")
+    if not tc.name:
+        issues.append("Missing scenario name")
+
+    return {
+        "scenario_id": str(scenario_id),
+        "is_valid": len(issues) == 0,
+        "issues": issues,
+        "category": tc.category.value,
+        "severity": tc.severity.value,
+    }
+
+
+@router.get("/{scenario_id}/capabilities")
+async def get_scenario_capabilities(
+    scenario_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Get required capabilities for a scenario."""
+    test_case_service = TestCaseService(db)
+    roles = await _get_user_roles(current_user, db)
+    tc = await test_case_service.get_test_case(scenario_id, current_user, roles)
+
+    req_caps = ["CHAT_API", "COMPLETION_API"]
+    if tc.category == TestCaseCategory.TOOL_EXECUTION:
+        req_caps.append("TOOL_INVOCATION")
+    if tc.category in (TestCaseCategory.PROMPT_INJECTION, TestCaseCategory.DATA_DISCLOSURE):
+        req_caps.append("RAG_RETRIEVAL")
+
+    return {
+        "scenario_id": str(scenario_id),
+        "required_capabilities": req_caps,
+        "applicable_target_types": tc.applicable_target_types or ["CHAT_API", "COMPLETION_API", "AGENT_API", "CUSTOM"],
+    }
+

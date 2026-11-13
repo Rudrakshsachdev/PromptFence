@@ -57,3 +57,13 @@ class SSRFError(AppError):
 
     def __init__(self, message: str = "Request to the specified URL is not allowed"):
         super().__init__(message=message, status_code=400)
+
+
+# Aliases for backward & forward compatibility
+NotFoundException = NotFoundError
+ConflictException = ConflictError
+ValidationException = ValidationError
+UnauthorizedException = AuthenticationError
+ForbiddenException = AuthorizationError
+RateLimitException = RateLimitError
+

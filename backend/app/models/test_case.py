@@ -27,6 +27,7 @@ class TestCaseSeverity(str, enum.Enum):
 
 
 class TestCase(Base):
+    __test__ = False
     __tablename__ = "test_cases"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

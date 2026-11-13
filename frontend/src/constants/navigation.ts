@@ -40,6 +40,16 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
         href: '/scenarios',
         iconName: 'ShieldAlert',
       },
+      {
+        title: 'Test Runs',
+        href: '/test-runs',
+        iconName: 'FlaskConical',
+      },
+      {
+        title: 'Security Findings',
+        href: '/findings',
+        iconName: 'AlertTriangle',
+      },
     ],
   },
   {

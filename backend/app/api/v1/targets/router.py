@@ -2,6 +2,7 @@
 
 import math
 import uuid
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -121,6 +122,26 @@ async def validate_target_connectivity(
     roles = await _get_user_roles(current_user, db)
     result = await target_service.validate_connectivity(target_id, current_user, roles)
     return TargetValidationResponse(**result)
+
+
+@router.post("/{target_id}/health-check")
+async def health_check_target(
+    target_id: uuid.UUID,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    """Health check endpoint for probe validation."""
+    target_service = TargetService(db)
+    roles = await _get_user_roles(current_user, db)
+    result = await target_service.validate_connectivity(target_id, current_user, roles)
+    return {
+        "target_id": str(target_id),
+        "is_reachable": result.get("is_valid", False),
+        "status_code": result.get("status_code", 200),
+        "latency_ms": result.get("latency_ms", 0),
+        "message": result.get("message", "Target checked"),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @router.get("/{target_id}/versions", response_model=list[TargetVersionResponse])
