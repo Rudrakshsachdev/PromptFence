@@ -91,6 +91,12 @@ class AssertionStatus(str, enum.Enum):
     ERROR = "ERROR"
     SKIPPED = "SKIPPED"
 
+class FindingStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+    RESOLVED = "RESOLVED"
+    FALSE_POSITIVE = "FALSE_POSITIVE"
+    ACCEPTED_RISK = "ACCEPTED_RISK"
 
 class TestRun(Base):
     __test__ = False
@@ -279,6 +285,13 @@ class TaintFinding(Base):
     evidence_reference: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     deduplication_key: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(30), default="OPEN", server_default="OPEN", nullable=False, index=True
+    )
+    fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    status_history: Mapped[list["FindingStatusHistory"]] = relationship(
+        "FindingStatusHistory", back_populates="finding", cascade="all, delete-orphan"
+    )
 
     test_run: Mapped["TestRun"] = relationship("TestRun", back_populates="findings")
     test_run_case: Mapped["TestRunCase | None"] = relationship("TestRunCase", back_populates="findings")
@@ -317,6 +330,22 @@ class TargetTrace(Base):
     )
     source_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     trace_type: Mapped[str] = mapped_column(String(100), nullable=False)
+
+class FindingStatusHistory(Base):
+    __tablename__ = "finding_status_history"
+
+    finding_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("taint_findings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    old_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    new_status: Mapped[str] = mapped_column(String(30), nullable=False)
+    changed_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
+    review_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    finding: Mapped["TaintFinding"] = relationship("TaintFinding", back_populates="status_history")
     trace_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     evidence_reference: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
