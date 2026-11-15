@@ -29,6 +29,6 @@ export const findingService = {
   ) =>
     apiClient<TaintFinding>(`/api/v1/findings/${findingId}/status`, {
       method: 'PATCH',
-      body,
+      body: JSON.stringify(body),
     }),
 };
