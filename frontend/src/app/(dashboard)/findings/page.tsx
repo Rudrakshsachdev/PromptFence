@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/table';
 import { useFindings } from '@/hooks/use-findings';
 import { formatDate } from '@/lib/utils';
-import { AttributionLevel, FindingSeverity, TaintFinding } from '@/types/finding';
+import { AttributionLevel, FindingSeverity, FindingStatus, TaintFinding } from '@/types/finding';
 
 const SEVERITY_FILTERS: { id: string; label: string }[] = [
   { id: 'ALL', label: 'All Severities' },
@@ -44,13 +44,24 @@ const SEVERITY_FILTERS: { id: string; label: string }[] = [
   { id: 'INFO', label: 'Info' },
 ];
 
+const STATUS_FILTERS: { id: string; label: string }[] = [
+  { id: 'ALL', label: 'All Statuses' },
+  { id: 'OPEN', label: 'Open' },
+  { id: 'ACKNOWLEDGED', label: 'Acknowledged' },
+  { id: 'RESOLVED', label: 'Resolved' },
+  { id: 'FALSE_POSITIVE', label: 'False Positive' },
+  { id: 'ACCEPTED_RISK', label: 'Accepted Risk' },
+];
+
 export default function FindingsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
 
   const { data, isLoading, refetch, isRefetching } = useFindings({
     severity: severityFilter !== 'ALL' ? severityFilter : undefined,
+    status: statusFilter !== 'ALL' ? (statusFilter as FindingStatus) : undefined,
     category: categoryFilter !== 'ALL' ? categoryFilter : undefined,
     page_size: 50,
   });
@@ -96,6 +107,47 @@ export default function FindingsPage() {
         return (
           <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 font-semibold text-[11px]">
             INFO
+          </Badge>
+        );
+    }
+  };
+
+  const getStatusBadge = (status: FindingStatus) => {
+    switch (status) {
+      case 'OPEN':
+        return (
+          <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 font-medium text-[10px]">
+            OPEN
+          </Badge>
+        );
+      case 'ACKNOWLEDGED':
+        return (
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 font-medium text-[10px]">
+            ACKNOWLEDGED
+          </Badge>
+        );
+      case 'RESOLVED':
+        return (
+          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 font-medium text-[10px]">
+            RESOLVED
+          </Badge>
+        );
+      case 'FALSE_POSITIVE':
+        return (
+          <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-200 font-medium text-[10px]">
+            FALSE POSITIVE
+          </Badge>
+        );
+      case 'ACCEPTED_RISK':
+        return (
+          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-medium text-[10px]">
+            ACCEPTED RISK
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-200 font-medium text-[10px]">
+            {status}
           </Badge>
         );
     }
@@ -256,6 +308,25 @@ export default function FindingsPage() {
 
           <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100">
             <span className="text-xs font-medium text-slate-500 mr-1 flex items-center gap-1">
+              <Filter className="h-3 w-3" /> Status:
+            </span>
+            {STATUS_FILTERS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setStatusFilter(s.id)}
+                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  statusFilter === s.id
+                    ? 'bg-teal-700 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-100">
+            <span className="text-xs font-medium text-slate-500 mr-1 flex items-center gap-1">
               <Filter className="h-3 w-3" /> Severity:
             </span>
             {SEVERITY_FILTERS.map((f) => (
@@ -281,19 +352,21 @@ export default function FindingsPage() {
           <Table>
             <TableHeader className="bg-slate-50/75">
               <TableRow className="border-slate-200">
-                <TableHead className="w-[110px] text-xs font-semibold text-slate-600">Severity</TableHead>
+                <TableHead className="w-[100px] text-xs font-semibold text-slate-600">Severity</TableHead>
+                <TableHead className="w-[120px] text-xs font-semibold text-slate-600">Status</TableHead>
                 <TableHead className="text-xs font-semibold text-slate-600">Finding</TableHead>
-                <TableHead className="w-[180px] text-xs font-semibold text-slate-600">Category & Location</TableHead>
-                <TableHead className="w-[160px] text-xs font-semibold text-slate-600">Attribution</TableHead>
-                <TableHead className="w-[180px] text-xs font-semibold text-slate-600">Canary / Evidence</TableHead>
-                <TableHead className="w-[130px] text-xs font-semibold text-slate-600">Observed</TableHead>
-                <TableHead className="w-[80px] text-right text-xs font-semibold text-slate-600">Action</TableHead>
+                <TableHead className="w-[170px] text-xs font-semibold text-slate-600">Category & Location</TableHead>
+                <TableHead className="w-[150px] text-xs font-semibold text-slate-600">Attribution</TableHead>
+                <TableHead className="w-[160px] text-xs font-semibold text-slate-600">Canary / Evidence</TableHead>
+                <TableHead className="w-[120px] text-xs font-semibold text-slate-600">Observed</TableHead>
+                <TableHead className="w-[70px] text-right text-xs font-semibold text-slate-600">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-48 mb-1" /><Skeleton className="h-3.5 w-64" /></TableCell>
                     <TableCell><Skeleton className="h-5 w-24 mb-1" /><Skeleton className="h-3 w-20" /></TableCell>
@@ -305,12 +378,12 @@ export default function FindingsPage() {
                 ))
               ) : findings.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-64">
+                  <TableCell colSpan={8} className="h-64">
                     <EmptyState
                       icon={ShieldCheck}
                       title="No security findings recorded"
                       description={
-                        searchTerm || severityFilter !== 'ALL' || categoryFilter !== 'ALL'
+                        searchTerm || severityFilter !== 'ALL' || statusFilter !== 'ALL' || categoryFilter !== 'ALL'
                           ? 'No findings match your current filter criteria.'
                           : 'Targets evaluated so far have not exhibited detected vulnerabilities or canary exposures.'
                       }
@@ -322,6 +395,9 @@ export default function FindingsPage() {
                   <TableRow key={f.id} className="hover:bg-slate-50/60 transition-colors border-slate-100">
                     <TableCell className="align-top py-3.5">
                       {getSeverityBadge(f.severity)}
+                    </TableCell>
+                    <TableCell className="align-top py-3.5">
+                      {getStatusBadge(f.status || 'OPEN')}
                     </TableCell>
                     <TableCell className="align-top py-3.5">
                       <div className="font-semibold text-sm text-slate-900 mb-0.5">

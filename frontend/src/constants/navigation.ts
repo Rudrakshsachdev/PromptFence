@@ -50,6 +50,26 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
         href: '/findings',
         iconName: 'AlertTriangle',
       },
+      {
+        title: 'Analytics & Scoring',
+        href: '/analytics',
+        iconName: 'BarChart3',
+      },
+      {
+        title: 'Regression & Baselines',
+        href: '/regression',
+        iconName: 'GitCompare',
+      },
+      {
+        title: 'Research Evaluation',
+        href: '/evaluation',
+        iconName: 'Binary',
+      },
+      {
+        title: 'Reports & Evidence',
+        href: '/reports',
+        iconName: 'FileText',
+      },
     ],
   },
   {

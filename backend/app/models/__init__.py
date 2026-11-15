@@ -26,6 +26,18 @@ from app.models.execution import (
     AssertionType,
     AssertionStatus,
 )
+from app.models.phase3 import (
+    SecurityBaseline,
+    RegressionComparison,
+    RegressionFindingMatch,
+    RegressionClassification,
+    SecurityUtilityEvaluation,
+    EvaluationExperiment,
+    ReportJob,
+    ReportStatus,
+    ReportFormat,
+    AuditLog,
+)
 
 __all__ = [
     "User",
@@ -63,4 +75,14 @@ __all__ = [
     "FindingSeverity",
     "AssertionType",
     "AssertionStatus",
+    "SecurityBaseline",
+    "RegressionComparison",
+    "RegressionFindingMatch",
+    "RegressionClassification",
+    "SecurityUtilityEvaluation",
+    "EvaluationExperiment",
+    "ReportJob",
+    "ReportStatus",
+    "ReportFormat",
+    "AuditLog",
 ]

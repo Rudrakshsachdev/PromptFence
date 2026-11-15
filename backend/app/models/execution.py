@@ -162,6 +162,8 @@ class TestRunCase(Base):
     )
     scenario_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     scenario_snapshot: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    pair_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    case_role: Mapped[str] = mapped_column(String(30), default="ADVERSARIAL", server_default="ADVERSARIAL", nullable=False)
     status: Mapped[TestCaseExecutionStatus] = mapped_column(
         Enum(TestCaseExecutionStatus, name="test_case_execution_status_enum"),
         default=TestCaseExecutionStatus.PENDING,

@@ -19,9 +19,13 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+# Testing & Artifacts
 .pytest_cache/
 .coverage
 htmlcov/
+artifacts/
+backend/artifacts/
+**/artifacts/
 .mypy_cache/
 .ruff_cache/
 venv/

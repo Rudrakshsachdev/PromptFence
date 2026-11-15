@@ -5,11 +5,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   AlertTriangle,
+  BarChart3,
+  Binary,
   ChevronLeft,
   ChevronRight,
   Crosshair,
+  FileText,
   FlaskConical,
   FolderKanban,
+  GitCompare,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -30,6 +34,10 @@ const iconMap: Record<string, React.ElementType> = {
   ShieldAlert,
   FlaskConical,
   AlertTriangle,
+  BarChart3,
+  GitCompare,
+  Binary,
+  FileText,
   User: UserIcon,
   Settings,
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -9,10 +9,13 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
+  Clock,
   Code2,
   Copy,
+  Edit3,
   ExternalLink,
   Flame,
+  History,
   Info,
   KeyRound,
   Layers,
@@ -22,22 +25,62 @@ import {
   ShieldAlert,
   Sparkles,
   Terminal,
+  UserCheck,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useFinding } from '@/hooks/use-findings';
+import { Textarea } from '@/components/ui/textarea';
+import { useFinding, useFindingHistory, useChangeFindingStatus } from '@/hooks/use-findings';
 import { formatDate } from '@/lib/utils';
-import { AttributionLevel, FindingSeverity } from '@/types/finding';
+import { AttributionLevel, FindingSeverity, FindingStatus, FindingStatusHistory } from '@/types/finding';
 
 export default function FindingDetailPage() {
   const params = useParams<{ findingId: string }>();
   const findingId = params?.findingId || '';
   const { data: finding, isLoading, error } = useFinding(findingId);
+  const { data: history, isLoading: isHistoryLoading } = useFindingHistory(findingId);
+  const changeStatusMutation = useChangeFindingStatus(findingId);
 
   const [copied, setCopied] = React.useState(false);
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<FindingStatus>('OPEN');
+  const [rationale, setRationale] = useState('');
+  const [reviewDate, setReviewDate] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (finding?.status) {
+      setSelectedStatus(finding.status);
+    }
+  }, [finding?.status]);
+
+  const handleUpdateStatus = async () => {
+    setActionError(null);
+    try {
+      await changeStatusMutation.mutateAsync({
+        status: selectedStatus,
+        rationale: rationale.trim() || undefined,
+        review_date: reviewDate ? new Date(reviewDate).toISOString() : undefined,
+      });
+      setIsStatusDialogOpen(false);
+      setRationale('');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to update status';
+      setActionError(msg);
+    }
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -109,6 +152,47 @@ export default function FindingDetailPage() {
         return (
           <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-300 font-semibold text-xs">
             INFORMATIONAL
+          </Badge>
+        );
+    }
+  };
+
+  const getStatusBadge = (status: FindingStatus) => {
+    switch (status) {
+      case 'OPEN':
+        return (
+          <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-300 font-semibold text-xs">
+            OPEN
+          </Badge>
+        );
+      case 'ACKNOWLEDGED':
+        return (
+          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 font-semibold text-xs">
+            ACKNOWLEDGED
+          </Badge>
+        );
+      case 'RESOLVED':
+        return (
+          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 font-semibold text-xs">
+            RESOLVED
+          </Badge>
+        );
+      case 'FALSE_POSITIVE':
+        return (
+          <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300 font-semibold text-xs">
+            FALSE POSITIVE
+          </Badge>
+        );
+      case 'ACCEPTED_RISK':
+        return (
+          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-300 font-semibold text-xs">
+            ACCEPTED RISK
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-300 font-semibold text-xs">
+            {status}
           </Badge>
         );
     }
@@ -188,12 +272,86 @@ export default function FindingDetailPage() {
       {/* Hero Finding Banner */}
       <Card className="border border-slate-200/80 shadow-sm bg-white overflow-hidden">
         <div className="p-6 space-y-4">
-          <div className="flex flex-wrap items-center gap-2.5">
-            {getSeverityBadge(finding.severity)}
-            <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300 font-medium text-xs">
-              {finding.category}
-            </Badge>
-            {getAttributionBadge(finding.attribution_level)}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2.5">
+              {getSeverityBadge(finding.severity)}
+              {getStatusBadge(finding.status || 'OPEN')}
+              <Badge variant="outline" className="bg-slate-100 text-slate-700 border-slate-300 font-medium text-xs">
+                {finding.category}
+              </Badge>
+              {getAttributionBadge(finding.attribution_level)}
+            </div>
+
+            {/* Triage Button & Dialog */}
+            <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs border-slate-300 hover:bg-slate-50">
+                  <Edit3 className="h-3.5 w-3.5 text-slate-600" />
+                  Triage Status
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-base font-semibold">Triage Security Finding</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2 text-sm">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Status</label>
+                    <select
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value as FindingStatus)}
+                      aria-label="Select finding triage status"
+                      className="w-full text-xs bg-slate-50 border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                    >
+                      <option value="OPEN">OPEN — Active vulnerability / exposure</option>
+                      <option value="ACKNOWLEDGED">ACKNOWLEDGED — Reviewed by security researcher</option>
+                      <option value="RESOLVED">RESOLVED — Defended or patched</option>
+                      <option value="FALSE_POSITIVE">FALSE_POSITIVE — Benign or misclassified</option>
+                      <option value="ACCEPTED_RISK">ACCEPTED_RISK — Documented business acceptance</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Rationale / Justification {(selectedStatus === 'FALSE_POSITIVE' || selectedStatus === 'ACCEPTED_RISK') && <span className="text-rose-500">*</span>}
+                    </label>
+                    <Textarea
+                      placeholder="Provide reasoning, compensating controls, or explanation for this status change..."
+                      value={rationale}
+                      onChange={(e) => setRationale(e.target.value)}
+                      rows={3}
+                      className="text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Scheduled Review Date (Optional)</label>
+                    <Input
+                      type="date"
+                      value={reviewDate}
+                      onChange={(e) => setReviewDate(e.target.value)}
+                      className="text-xs"
+                    />
+                  </div>
+                  {actionError && (
+                    <div className="text-xs text-rose-600 bg-rose-50 border border-rose-200 p-2 rounded">
+                      {actionError}
+                    </div>
+                  )}
+                </div>
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button variant="outline" size="sm" onClick={() => setIsStatusDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-teal-700 hover:bg-teal-800 text-white"
+                    onClick={handleUpdateStatus}
+                    disabled={changeStatusMutation.isPending || ((selectedStatus === 'FALSE_POSITIVE' || selectedStatus === 'ACCEPTED_RISK') && !rationale.trim())}
+                  >
+                    {changeStatusMutation.isPending ? 'Updating...' : 'Save Status'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div>
@@ -356,6 +514,52 @@ export default function FindingDetailPage() {
                   <li>Paraphrased semantic summaries without token preservation require supplementary semantic assertions.</li>
                   <li>Absence of canary leakage indicates resistance on instrumented paths, not complete immunity to unmodeled attack vectors.</li>
                 </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Status & Triage History Audit Trail */}
+          <Card className="border border-slate-200/80 shadow-sm bg-white">
+            <CardHeader className="py-3 px-5 border-b border-slate-100">
+              <CardTitle className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <History className="h-3.5 w-3.5 text-slate-400" />
+                Status & Triage History Audit Trail
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5">
+              {isHistoryLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </div>
+              ) : !history || history.length === 0 ? (
+                <p className="text-xs text-slate-400 italic">No triage history recorded for this finding.</p>
+              ) : (
+                <div className="relative pl-4 border-l border-slate-200 space-y-4 text-xs">
+                  {history.map((h: FindingStatusHistory) => (
+                    <div key={h.id} className="relative">
+                      <div className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-teal-600 ring-4 ring-white" />
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-700">{h.old_status}</span>
+                        <span className="text-slate-400">→</span>
+                        <span className="font-semibold text-teal-700">{h.new_status}</span>
+                        <span className="text-[11px] text-slate-400 font-mono ml-auto">
+                          {formatDate(h.created_at)}
+                        </span>
+                      </div>
+                      {h.rationale && (
+                        <p className="text-slate-600 text-[11px] mt-1 bg-slate-50 p-2 rounded border border-slate-100">
+                          {h.rationale}
+                        </p>
+                      )}
+                      {h.review_date && (
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          Next review scheduled: {formatDate(h.review_date)}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>

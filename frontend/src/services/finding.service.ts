@@ -2,7 +2,7 @@ import { apiClient } from '@/lib/api-client';
 import { PaginatedResponse } from '@/types/api';
 import { FindingStatus, FindingStatusHistory, TaintFinding } from '@/types/finding';
 
-export interface FindingListParams {
+export interface FindingListParams extends Record<string, string | number | boolean | undefined> {
   page?: number;
   page_size?: number;
   category?: string;

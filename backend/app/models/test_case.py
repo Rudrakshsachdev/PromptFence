@@ -46,6 +46,9 @@ class TestCase(Base):
     expected_behavior: Mapped[str | None] = mapped_column(Text, nullable=True)
     assertion_config: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     applicable_target_types: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    pair_id: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    case_role: Mapped[str] = mapped_column(String(30), default="ADVERSARIAL", server_default="ADVERSARIAL", nullable=False)
+    expected_utility_assertions: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     owner: Mapped["User"] = relationship("User", back_populates="test_cases")  # noqa: F821
