@@ -170,6 +170,8 @@ class TaintFindingResponse(BaseModel):
     evidence_reference: dict[str, Any] | None = None
     deduplication_key: str | None = None
     observed_at: datetime
+    status: str = "OPEN"
+    fingerprint: str | None = None
     created_at: datetime
 
     class Config:
@@ -224,3 +226,22 @@ class TargetHealthCheckResponse(BaseModel):
     latency_ms: int
     message: str
     timestamp: datetime
+
+class FindingStatusUpdate(BaseModel):
+    status: str
+    rationale: str | None = Field(default=None, max_length=2000)
+    review_date: datetime | None = None
+
+
+class FindingStatusHistoryResponse(BaseModel):
+    id: uuid.UUID
+    finding_id: uuid.UUID
+    old_status: str
+    new_status: str
+    changed_by: uuid.UUID | None = None
+    rationale: str | None = None
+    review_date: datetime | None = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
