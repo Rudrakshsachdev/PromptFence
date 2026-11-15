@@ -23,8 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed python dependencies from builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+COPY --from=builder /root/.local /usr/local
+ENV PATH=/usr/local/bin:$PATH
 
 # Non-root user for security
 RUN groupadd -g 1001 promptfence && \
