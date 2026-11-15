@@ -330,6 +330,11 @@ class TargetTrace(Base):
     )
     source_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     trace_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    trace_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    evidence_reference: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
+    test_run_case: Mapped["TestRunCase | None"] = relationship("TestRunCase", back_populates="traces")
+
 
 class FindingStatusHistory(Base):
     __tablename__ = "finding_status_history"
@@ -346,7 +351,4 @@ class FindingStatusHistory(Base):
     review_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     finding: Mapped["TaintFinding"] = relationship("TaintFinding", back_populates="status_history")
-    trace_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
-    evidence_reference: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
-    test_run_case: Mapped["TestRunCase | None"] = relationship("TestRunCase", back_populates="traces")
