@@ -25,6 +25,23 @@ export interface TaintFinding {
   observation_location: string;
   detection_method: string;
   attribution_level: AttributionLevel;
+  export type FindingStatus =
+  | 'OPEN'
+  | 'ACKNOWLEDGED'
+  | 'RESOLVED'
+  | 'FALSE_POSITIVE'
+  | 'ACCEPTED_RISK';
+
+  export interface FindingStatusHistory {
+  id: string;
+  finding_id: string;
+  old_status: FindingStatus;
+  new_status: FindingStatus;
+  changed_by: string | null;
+  rationale: string | null;
+  review_date: string | null;
+  created_at: string;
+}
   evidence_reference: {
     assertion_id?: string;
     assertion_type?: string;
@@ -42,5 +59,7 @@ export interface TaintFinding {
   } | null;
   deduplication_key: string | null;
   observed_at: string;
+  status: FindingStatus;
+  fingerprint: string | null;
   created_at: string;
 }
