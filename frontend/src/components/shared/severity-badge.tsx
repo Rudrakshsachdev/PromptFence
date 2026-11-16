@@ -1,36 +1,70 @@
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { ScenarioSeverity } from '@/types/scenario';
+import { cn } from '@/lib/utils';
+import { getSeverityMeta, TONE_CLASSES } from '@/lib/status';
 
-const severityLabels: Record<ScenarioSeverity, { label: string; className: string }> = {
-  CRITICAL: {
-    label: 'Critical',
-    className: 'bg-red-600 text-white border-transparent font-bold',
-  },
-  HIGH: {
-    label: 'High',
-    className: 'bg-orange-500 text-white border-transparent font-semibold',
-  },
-  MEDIUM: {
-    label: 'Medium',
-    className: 'bg-amber-100 text-amber-800 border-amber-300 font-medium',
-  },
-  LOW: {
-    label: 'Low',
-    className: 'bg-blue-100 text-blue-800 border-blue-300 font-medium',
-  },
-  INFO: {
-    label: 'Info',
-    className: 'bg-slate-100 text-slate-700 border-slate-300 font-medium',
-  },
-};
-
-export function SeverityBadge({ severity }: { severity: ScenarioSeverity }) {
-  const config = severityLabels[severity] || { label: severity, className: '' };
+/**
+ * Severity chip. Uses a filled bar glyph whose height encodes rank, so severity
+ * is legible without relying on colour.
+ */
+export function SeverityBadge({
+  severity,
+  className,
+  compact = false,
+}: {
+  severity: string;
+  className?: string;
+  /** Short label ("Info" instead of "Informational"). */
+  compact?: boolean;
+}) {
+  const meta = getSeverityMeta(severity);
+  const t = TONE_CLASSES[meta.tone];
+  const label = compact && severity === 'INFO' ? 'Info' : meta.label;
   return (
-    <Badge variant="outline" className={`text-[10px] uppercase tracking-wider px-2 py-0.5 ${config.className}`}>
-      {config.label}
-    </Badge>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] font-medium leading-4',
+        t.pill,
+        className,
+      )}
+    >
+      <SeverityGlyph severity={severity} />
+      {label}
+    </span>
   );
 }
 
+const RANK: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1, INFO: 0 };
+
+/** Four ascending bars; filled count = severity rank. */
+export function SeverityGlyph({ severity, className }: { severity: string; className?: string }) {
+  const rank = RANK[severity] ?? 0;
+  const t = TONE_CLASSES[getSeverityMeta(severity).tone];
+  return (
+    <span aria-hidden className={cn('inline-flex h-2.5 items-end gap-[1.5px]', className)}>
+      {[1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className={cn('w-[2px] rounded-[1px]', i <= rank ? t.bar : 'bg-current opacity-25')}
+          style={{ height: `${25 + i * 18.75}%` }}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** Plain severity label for dense tables: glyph + text, no chip. */
+export function SeverityIndicator({ severity, className }: { severity: string; className?: string }) {
+  const meta = getSeverityMeta(severity);
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium',
+        TONE_CLASSES[meta.tone].text,
+        className,
+      )}
+    >
+      <SeverityGlyph severity={severity} />
+      {meta.label}
+    </span>
+  );
+}

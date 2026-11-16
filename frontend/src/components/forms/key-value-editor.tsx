@@ -78,7 +78,7 @@ export function KeyValueEditor({
             variant="ghost"
             size="icon"
             onClick={() => removeRow(idx)}
-            className="text-slate-400 hover:text-red-500 h-9 w-9"
+            className="h-9 w-9 text-muted-foreground hover:text-critical"
           >
             <Trash2 className="h-4 w-4" />
           </Button>

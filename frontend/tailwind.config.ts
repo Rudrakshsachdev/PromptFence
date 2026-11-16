@@ -1,5 +1,7 @@
 import type { Config } from 'tailwindcss';
 
+const token = (name: string) => `hsl(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
   darkMode: ['class'],
   content: [
@@ -18,46 +20,56 @@ const config: Config = {
     },
     extend: {
       colors: {
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        border: {
+          DEFAULT: token('border'),
+          strong: token('border-strong'),
+        },
+        input: token('input'),
+        ring: token('ring'),
+        background: token('background'),
+        foreground: token('foreground'),
+        sidebar: token('sidebar'),
+        surface: {
+          DEFAULT: token('surface'),
+          hover: token('surface-hover'),
+        },
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+          DEFAULT: token('primary'),
+          foreground: token('primary-foreground'),
         },
         secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
+          DEFAULT: token('secondary'),
+          foreground: token('secondary-foreground'),
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
+          DEFAULT: token('destructive'),
+          foreground: token('destructive-foreground'),
         },
         muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+          DEFAULT: token('muted'),
+          foreground: token('muted-foreground'),
+        },
+        subtle: {
+          foreground: token('subtle-foreground'),
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: token('accent'),
+          foreground: token('accent-foreground'),
         },
         popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
+          DEFAULT: token('popover'),
+          foreground: token('popover-foreground'),
         },
         card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
+          DEFAULT: token('card'),
+          foreground: token('card-foreground'),
         },
-        slate: {
-          850: '#151f33',
-          950: '#070d18',
-        },
-        teal: {
-          550: '#0d9488',
-        },
+        info: token('info'),
+        success: token('success'),
+        warning: token('warning'),
+        high: token('high'),
+        critical: token('critical'),
+        low: token('low'),
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -65,8 +77,15 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        sans: ['var(--font-sans)', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'JetBrains Mono', 'ui-monospace', 'monospace'],
+      },
+      fontSize: {
+        '2xs': ['0.6875rem', { lineHeight: '1rem' }],
+      },
+      boxShadow: {
+        panel: '0 1px 0 0 hsl(0 0% 100% / 0.03) inset, 0 1px 2px 0 rgb(0 0 0 / 0.35)',
+        overlay: '0 16px 48px -12px rgb(0 0 0 / 0.6), 0 0 0 1px hsl(var(--border))',
       },
       keyframes: {
         'accordion-down': {
@@ -88,4 +107,3 @@ const config: Config = {
 };
 
 export default config;
-

@@ -1,509 +1,574 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  Activity,
-  AlertCircle,
-  AlertTriangle,
   ArrowRight,
-  Beaker,
-  CheckCircle2,
-  Clock,
-  Compass,
-  Database,
-  ExternalLink,
-  Flame,
-  Layers,
-  Microscope,
+  FileSearch,
+  FlaskConical,
   Play,
-  Plus,
   RotateCcw,
   Scale,
-  Shield,
-  ShieldAlert,
   ShieldCheck,
-  Zap,
+  ThumbsDown,
+  Users,
 } from 'lucide-react';
-import { PageHeader } from '@/components/layout/page-header';
-import { Badge } from '@/components/ui/badge';
+import { SegmentBar } from '@/components/charts/bar-list';
+import { TONE_HEX } from '@/components/charts/chart-theme';
+import { Meter } from '@/components/charts/meter';
+import { EmptyState } from '@/components/dashboard/empty-state';
+import { StatsCard } from '@/components/dashboard/stats-card';
+import { HeaderMeta, PageHeader } from '@/components/layout/page-header';
+import { CodeViewer } from '@/components/shared/code-viewer';
+import { DataTable, type DataTableColumn, type SortState } from '@/components/shared/data-table';
+import { ErrorState } from '@/components/shared/error-state';
+import { ClearFiltersButton, FilterBar, FilterSelect, SegmentedControl } from '@/components/shared/filter-bar';
+import { IdChip } from '@/components/shared/id-chip';
+import { Pagination, paginate } from '@/components/shared/pagination';
+import { Panel } from '@/components/shared/panel';
+import { PageSkeleton } from '@/components/shared/skeletons';
+import { StatusPill } from '@/components/shared/status-pill';
+import { UnavailableNotice } from '@/components/shared/unavailable';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  useExperiments,
-  useCreateExperiment,
-  useRunExperiment,
-  useSecurityUtilitySummary,
-} from '@/hooks/use-evaluation';
-import { useTargets } from '@/hooks/use-targets';
+import { useSecurityUtilitySummary } from '@/hooks/use-evaluation';
 import { useTestRuns } from '@/hooks/use-test-runs';
+import { formatNumber, formatPercent, formatTimestamp, humanize, shortId } from '@/lib/format';
+import type { StatusMeta } from '@/lib/status';
 import { formatDate } from '@/lib/utils';
-import { EvaluationExperiment, PairedEvaluationItem } from '@/types/evaluation';
+import type { PairedEvaluationItem } from '@/types/evaluation';
 
-export default function EvaluationPage() {
-  const { data: targetsData } = useTargets(1, 100);
-  const targets = targetsData?.items || [];
-  const { data: completedRunsData } = useTestRuns({ status: 'COMPLETED', page_size: 50 });
-  const completedRuns = completedRunsData?.items || [];
+const SECURITY_VERDICT_META: Record<PairedEvaluationItem['security_verdict'], StatusMeta> = {
+  PASSED: { label: 'Defended', tone: 'success', description: 'Adversarial case did not succeed.' },
+  FAILED: { label: 'Compromised', tone: 'critical', description: 'Adversarial case succeeded.' },
+  INCONCLUSIVE: { label: 'Inconclusive', tone: 'neutral' },
+};
+
+const UTILITY_VERDICT_META: Record<PairedEvaluationItem['utility_verdict'], StatusMeta> = {
+  SATISFIED: { label: 'Satisfied', tone: 'success', description: 'Benign control completed its task.' },
+  OVER_REFUSAL: { label: 'Over-refusal', tone: 'warning', description: 'Benign control was refused.' },
+  TASK_FAILED: { label: 'Task failed', tone: 'critical', description: 'Benign control did not complete.' },
+  INCONCLUSIVE: { label: 'Inconclusive', tone: 'neutral' },
+};
+
+const PAGE_SIZE = 20;
+
+/** Sorts the full list before client-side pagination (DataTable only sorts the rows it receives). */
+function sortRows<T>(rows: T[], columns: DataTableColumn<T>[], sort: SortState): T[] {
+  const get = sort ? columns.find((c) => c.id === sort.id)?.sortValue : undefined;
+  if (!sort || !get) return rows;
+  const dir = sort.direction === 'asc' ? 1 : -1;
+  return [...rows].sort((a, b) => {
+    const va = get(a);
+    const vb = get(b);
+    if (va === vb) return 0;
+    if (va === null || va === undefined) return 1;
+    if (vb === null || vb === undefined) return -1;
+    return va > vb ? dir : -dir;
+  });
+}
+
+
+function VerdictPill({ meta }: { meta: StatusMeta }) {
+  return <StatusPill tone={meta.tone} label={meta.label} title={meta.description} />;
+}
+
+export default function SecurityEvaluationPage() {
+  const runsQuery = useTestRuns({ status: 'COMPLETED', page_size: 50 });
+  const completedRuns = useMemo(() => runsQuery.data?.items ?? [], [runsQuery.data]);
 
   const [selectedRunId, setSelectedRunId] = useState<string>('');
   const activeRunId = selectedRunId || (completedRuns.length > 0 ? completedRuns[0].id : '');
+  const activeRun = completedRuns.find((r) => r.id === activeRunId);
 
-  const { data: utilitySummary, isLoading: isUtilityLoading, refetch: refetchUtility } = useSecurityUtilitySummary(activeRunId);
-  const { data: experiments, isLoading: isExperimentsLoading, refetch: refetchExperiments } = useExperiments();
+  const summaryQuery = useSecurityUtilitySummary(activeRunId);
+  const summary = summaryQuery.data;
+  const measured = !!summary && summary.total_pairs > 0;
 
-  const createExperimentMutation = useCreateExperiment();
-  const runExperimentMutation = useRunExperiment();
+  const [securityFilter, setSecurityFilter] = useState('');
+  const [utilityFilter, setUtilityFilter] = useState('');
+  const [scope, setScope] = useState<'all' | 'over_refusal' | 'regression'>('all');
+  const [page, setPage] = useState(1);
+  const [inspected, setInspected] = useState<PairedEvaluationItem | null>(null);
+  const [sort, setSort] = useState<SortState>(null);
 
-  // Create Experiment Modal State
-  const [isExpOpen, setIsExpOpen] = useState(false);
-  const [expName, setExpName] = useState('');
-  const [expDescription, setExpDescription] = useState('');
-  const [expDatasetName, setExpDatasetName] = useState('promptfence-ground-truth-v1');
-  const [expTargetId, setExpTargetId] = useState('');
-  const [expManifest, setExpManifest] = useState(
-    JSON.stringify(
-      {
-        expected_leakages: [
-          {
-            case_id: 'sample-case-1',
-            should_leak_token: true,
-            expected_source: 'synthetic-customer-email-001',
-          },
-        ],
-        untrusted_sources: ['synthetic-customer-email-001'],
-      },
-      null,
-      2
-    )
+  const filteredPairs = useMemo(() => {
+    const pairs = summary?.pairs ?? [];
+    return pairs.filter(
+      (p) =>
+        (!securityFilter || p.security_verdict === securityFilter) &&
+        (!utilityFilter || p.utility_verdict === utilityFilter) &&
+        (scope === 'all' ||
+          (scope === 'over_refusal' && p.is_over_refusal) ||
+          (scope === 'regression' && p.is_utility_regression)),
+    );
+  }, [summary, securityFilter, utilityFilter, scope]);
+
+  const hasFilters = !!securityFilter || !!utilityFilter || scope !== 'all';
+
+  const verdictMix = useMemo(() => {
+    const pairs = summary?.pairs ?? [];
+    const count = <K extends string>(get: (p: PairedEvaluationItem) => K, key: K) =>
+      pairs.filter((p) => get(p) === key).length;
+    return {
+      security: (Object.keys(SECURITY_VERDICT_META) as PairedEvaluationItem['security_verdict'][]).map((k) => ({
+        key: k,
+        label: SECURITY_VERDICT_META[k].label,
+        value: count((p) => p.security_verdict, k),
+        color: TONE_HEX[SECURITY_VERDICT_META[k].tone],
+      })),
+      utility: (Object.keys(UTILITY_VERDICT_META) as PairedEvaluationItem['utility_verdict'][]).map((k) => ({
+        key: k,
+        label: UTILITY_VERDICT_META[k].label,
+        value: count((p) => p.utility_verdict, k),
+        color: TONE_HEX[UTILITY_VERDICT_META[k].tone],
+      })),
+    };
+  }, [summary]);
+
+  const caseLink = (caseId: string | null) =>
+    caseId ? (
+      <Link
+        href={`/test-runs/${activeRunId}/cases/${caseId}`}
+        onClick={(e) => e.stopPropagation()}
+        className="font-mono text-xs text-primary hover:underline"
+        title={caseId}
+      >
+        {shortId(caseId)}
+      </Link>
+    ) : (
+      <span className="text-xs italic text-subtle-foreground">Unpaired</span>
+    );
+
+  const columns: DataTableColumn<PairedEvaluationItem>[] = [
+    {
+      id: 'pair',
+      header: 'Pair',
+      sortValue: (p) => p.pair_id,
+      cell: (p) => <IdChip value={p.pair_id} length={14} />,
+    },
+    { id: 'adv', header: 'Adversarial case', cell: (p) => caseLink(p.adversarial_case_id) },
+    { id: 'benign', header: 'Benign control', cell: (p) => caseLink(p.benign_case_id), hideBelow: 'md' },
+    {
+      id: 'security',
+      header: 'Security',
+      sortValue: (p) => p.security_verdict,
+      cell: (p) => <VerdictPill meta={SECURITY_VERDICT_META[p.security_verdict]} />,
+    },
+    {
+      id: 'utility',
+      header: 'Utility',
+      sortValue: (p) => p.utility_verdict,
+      cell: (p) => <VerdictPill meta={UTILITY_VERDICT_META[p.utility_verdict]} />,
+    },
+    {
+      id: 'flags',
+      header: 'Flags',
+      hideBelow: 'lg',
+      cell: (p) => (
+        <div className="flex flex-wrap gap-1">
+          {p.is_over_refusal && <StatusPill tone="warning" label="Over-refusal" variant="plain" />}
+          {p.is_utility_regression && <StatusPill tone="high" label="Utility regression" variant="plain" />}
+          {!p.is_over_refusal && !p.is_utility_regression && (
+            <span className="text-xs text-subtle-foreground">—</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'evaluated',
+      header: 'Evaluated',
+      align: 'right',
+      hideBelow: 'xl',
+      sortValue: (p) => p.evaluated_at,
+      cell: (p) => <span className="font-mono text-[11px] text-muted-foreground">{formatTimestamp(p.evaluated_at)}</span>,
+    },
+    {
+      id: 'inspect',
+      header: <span className="sr-only">Inspect</span>,
+      align: 'right',
+      cell: (p) => (
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            setInspected(p);
+          }}
+        >
+          <FileSearch className="h-3.5 w-3.5" /> Inspect
+        </Button>
+      ),
+    },
+  ];
+
+  const paged = paginate(sortRows(filteredPairs, columns, sort), page, PAGE_SIZE);
+
+  if (runsQuery.isLoading) return <PageSkeleton />;
+
+  const header = (
+    <PageHeader
+      icon={Scale}
+      title="Security evaluation"
+      description="Paired security–utility analysis: each adversarial case is matched with a benign control so defenses are measured against the usefulness they cost."
+      meta={
+        activeRun ? (
+          <>
+            <HeaderMeta label="Run">
+              <Link href={`/test-runs/${activeRun.id}`} className="font-mono text-xs hover:text-primary">
+                {shortId(activeRun.id)}
+              </Link>
+            </HeaderMeta>
+            <HeaderMeta label="Target">{activeRun.target?.name ?? activeRun.execution_snapshot?.target?.name ?? '—'}</HeaderMeta>
+            <HeaderMeta label="Suite">{activeRun.test_suite?.name ?? activeRun.execution_snapshot?.test_suite?.name ?? '—'}</HeaderMeta>
+            <HeaderMeta label="Completed">{formatDate(activeRun.completed_at)}</HeaderMeta>
+          </>
+        ) : undefined
+      }
+    >
+      <Button asChild variant="outline" size="sm">
+        <Link href="/evaluation/experiments">
+          Research experiments <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </Button>
+      <Button
+        variant="outline"
+        size="icon-sm"
+        aria-label="Refresh evaluation"
+        title="Refresh"
+        disabled={!activeRunId}
+        onClick={() => {
+          runsQuery.refetch();
+          summaryQuery.refetch();
+        }}
+      >
+        <RotateCcw className={`h-3.5 w-3.5 ${summaryQuery.isFetching ? 'animate-spin' : ''}`} />
+      </Button>
+    </PageHeader>
   );
-  const [expError, setExpError] = useState<string | null>(null);
 
-  const handleCreateExperiment = async () => {
-    setExpError(null);
-    if (!expName.trim() || !expTargetId) {
-      setExpError('Please provide an experiment name and target.');
-      return;
-    }
-    let parsedManifest = {};
-    try {
-      parsedManifest = JSON.parse(expManifest);
-    } catch {
-      setExpError('Ground-truth manifest must be valid JSON.');
-      return;
-    }
-    try {
-      await createExperimentMutation.mutateAsync({
-        name: expName.trim(),
-        description: expDescription.trim() || undefined,
-        dataset_name: expDatasetName.trim() || 'promptfence-ground-truth-v1',
-        target_id: expTargetId,
-        ground_truth_manifest: parsedManifest,
-      });
-      setIsExpOpen(false);
-      setExpName('');
-      setExpDescription('');
-    } catch (err: unknown) {
-      setExpError(err instanceof Error ? err.message : 'Failed to launch research experiment');
-    }
-  };
+  if (runsQuery.isError) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <ErrorState error={runsQuery.error} onRetry={() => runsQuery.refetch()} />
+      </div>
+    );
+  }
+
+  if (completedRuns.length === 0) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <EmptyState
+          icon={Scale}
+          title="No completed test runs to evaluate"
+          description="Security–utility evaluation reads paired adversarial and benign cases from a completed run. Launch a run with a suite that contains paired scenarios."
+          actionText="Launch test run"
+          actionHref="/test-runs/new"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Security-Utility & Research Evaluation"
-        description="Quantify prompt defense trade-offs (security efficacy vs benign over-refusal) and run controlled scientific experiments with ground-truth manifests to evaluate the 6 research metrics."
-      >
-        <div className="flex items-center gap-2">
-          {/* New Experiment Modal */}
-          <Dialog open={isExpOpen} onOpenChange={setIsExpOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="bg-teal-700 hover:bg-teal-800 text-white gap-1.5 text-xs shadow-sm">
-                <Microscope className="h-3.5 w-3.5" />
-                New Research Experiment
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle className="text-base font-semibold">Register Research Evaluation Experiment</DialogTitle>
-                <DialogDescription className="text-xs text-slate-500">
-                  Prepares an experimental run against a ground-truth manifest to calculate formal research metrics.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3 py-2 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Experiment Name</label>
-                  <Input
-                    placeholder="e.g., Llama-3-Canary-Provenance-Accuracy-Run-1"
-                    value={expName}
-                    onChange={(e) => setExpName(e.target.value)}
-                    className="text-xs"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">AI Target</label>
-                    <select
-                      value={expTargetId}
-                      onChange={(e) => setExpTargetId(e.target.value)}
-                      aria-label="Select AI target for experiment"
-                      className="w-full text-xs bg-slate-50 border border-slate-200 rounded-md p-2 text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                    >
-                      <option value="">Select Target...</option>
-                      {targets.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Dataset Name</label>
-                    <Input
-                      value={expDatasetName}
-                      onChange={(e) => setExpDatasetName(e.target.value)}
-                      className="text-xs"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Ground-Truth Manifest (JSON)</label>
-                  <Textarea
-                    rows={6}
-                    value={expManifest}
-                    onChange={(e) => setExpManifest(e.target.value)}
-                    className="font-mono text-[11px]"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Hypothesis / Description (Optional)</label>
-                  <Input
-                    placeholder="Hypothesis on indirect prompt injection defense..."
-                    value={expDescription}
-                    onChange={(e) => setExpDescription(e.target.value)}
-                    className="text-xs"
-                  />
-                </div>
-                {expError && (
-                  <div className="text-xs text-rose-600 bg-rose-50 border border-rose-200 p-2 rounded">
-                    {expError}
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" size="sm" onClick={() => setIsExpOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  className="bg-teal-700 hover:bg-teal-800 text-white"
-                  onClick={handleCreateExperiment}
-                  disabled={createExperimentMutation.isPending}
-                >
-                  {createExperimentMutation.isPending ? 'Registering...' : 'Register Experiment'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+      {header}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              refetchUtility();
-              refetchExperiments();
-            }}
-            className="border-slate-200 text-slate-700"
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <span className="eyebrow shrink-0">Evaluated run</span>
+        <Select
+          value={activeRunId}
+          onValueChange={(v) => {
+            setSelectedRunId(v);
+            setPage(1);
+          }}
+        >
+          <SelectTrigger className="h-8 sm:max-w-md" aria-label="Select completed test run">
+            <SelectValue placeholder="Select a completed run" />
+          </SelectTrigger>
+          <SelectContent>
+            {completedRuns.map((r) => (
+              <SelectItem key={r.id} value={r.id}>
+                {(r.test_suite?.name ?? 'Suite') + ' · ' + formatDate(r.created_at) + ' · ' + shortId(r.id)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-xs text-subtle-foreground">
+          {formatNumber(completedRuns.length)} completed runs available
+        </span>
+      </div>
+
+      {summaryQuery.isError ? (
+        <ErrorState error={summaryQuery.error} onRetry={() => summaryQuery.refetch()} />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <StatsCard
+              title="Case pairs"
+              value={formatNumber(summary?.total_pairs)}
+              subtitle="Adversarial ↔ benign controls"
+              icon={Users}
+              isLoading={summaryQuery.isLoading}
+            />
+            <StatsCard
+              title="Security effectiveness"
+              value={formatPercent(summary?.security_pass_rate_pct)}
+              subtitle="Attacks defended"
+              icon={ShieldCheck}
+              tone="success"
+              unavailable={!measured}
+              isLoading={summaryQuery.isLoading}
+            />
+            <StatsCard
+              title="Utility preservation"
+              value={formatPercent(summary?.benign_completion_rate_pct)}
+              subtitle="Benign tasks completed"
+              icon={Scale}
+              tone="info"
+              unavailable={!measured}
+              isLoading={summaryQuery.isLoading}
+            />
+            <StatsCard
+              title="Over-refusals"
+              value={formatNumber(summary?.over_refusals_detected)}
+              subtitle={measured ? `${formatPercent(summary?.over_refusal_rate_pct)} of pairs` : 'Benign tasks rejected'}
+              icon={ThumbsDown}
+              tone="warning"
+              unavailable={!measured}
+              isLoading={summaryQuery.isLoading}
+            />
+          </div>
+
+          {!summaryQuery.isLoading && !measured && (
+            <UnavailableNotice
+              title="No paired cases in this run"
+              description="This run contains no adversarial/benign case pairs, so security–utility rates cannot be measured. Values are shown as “Not measured” rather than 0%. Select another run or execute a suite with paired scenarios."
+            />
+          )}
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Panel title="Security–utility balance" description="Rates over all evaluated pairs" icon={Scale}>
+              {summaryQuery.isLoading ? (
+                <Skeleton className="h-[200px] w-full" />
+              ) : (
+                <div className="space-y-4">
+                  <Meter
+                    label="Security pass rate"
+                    value={measured ? summary?.security_pass_rate_pct : null}
+                    tone="success"
+                    hint="Share of adversarial cases the target defended."
+                  />
+                  <Meter
+                    label="Benign completion rate"
+                    value={measured ? summary?.benign_completion_rate_pct : null}
+                    tone="info"
+                    hint="Share of benign controls completed as intended."
+                  />
+                  <Meter
+                    label="Over-refusal rate"
+                    value={measured ? summary?.over_refusal_rate_pct : null}
+                    tone="warning"
+                    hint="Benign controls wrongly refused. Lower is better."
+                  />
+                  <Meter
+                    label="Utility regression rate"
+                    value={measured ? summary?.utility_regression_rate_pct : null}
+                    tone="high"
+                    hint="Pairs where defending the attack degraded benign utility."
+                  />
+                </div>
+              )}
+            </Panel>
+
+            <Panel title="Paired evaluation outcomes" description="Verdict distribution per side of each pair">
+              {summaryQuery.isLoading ? (
+                <Skeleton className="h-[200px] w-full" />
+              ) : (
+                <div className="space-y-6">
+                  <div>
+                    <p className="eyebrow mb-2">Adversarial (security)</p>
+                    <SegmentBar items={verdictMix.security} emptyMessage="No adversarial verdicts" />
+                  </div>
+                  <div>
+                    <p className="eyebrow mb-2">Benign (utility)</p>
+                    <SegmentBar items={verdictMix.utility} emptyMessage="No benign verdicts" />
+                  </div>
+                </div>
+              )}
+            </Panel>
+
+            <Panel title="Methodology" description="How these values were computed">
+              {summaryQuery.isLoading ? (
+                <Skeleton className="h-[200px] w-full" />
+              ) : summary?.methodology_notes?.length ? (
+                <ol className="list-decimal space-y-2 pl-4 text-xs leading-relaxed text-muted-foreground marker:font-mono marker:text-subtle-foreground">
+                  {summary.methodology_notes.map((note, i) => (
+                    <li key={i}>{note}</li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="text-xs italic text-subtle-foreground">No methodology notes returned for this run.</p>
+              )}
+            </Panel>
+          </div>
+
+          <Panel
+            title="Paired case outcomes"
+            description={measured ? `${formatNumber(filteredPairs.length)} of ${formatNumber(summary?.pairs.length)} pairs` : undefined}
+            flush
           >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </PageHeader>
-
-      {/* Tabs: Security-Utility Trade-Offs vs Research Experiments */}
-      <Tabs defaultValue="utility" className="space-y-6">
-        <TabsList className="bg-slate-100 p-1 border border-slate-200/80">
-          <TabsTrigger value="utility" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-teal-800 flex items-center gap-1.5">
-            <Scale className="h-3.5 w-3.5" />
-            Security-Utility Paired Trade-Offs
-          </TabsTrigger>
-          <TabsTrigger value="experiments" className="text-xs font-semibold data-[state=active]:bg-white data-[state=active]:text-teal-800 flex items-center gap-1.5">
-            <Beaker className="h-3.5 w-3.5" />
-            Ground-Truth Research Experiments
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Tab 1: Security-Utility Paired Testing */}
-        <TabsContent value="utility" className="space-y-6">
-          {/* Run Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500 whitespace-nowrap">Evaluated Run:</span>
-            <select
-              value={activeRunId}
-              onChange={(e) => setSelectedRunId(e.target.value)}
-              aria-label="Select test run for security-utility evaluation"
-              className="text-xs font-medium bg-white border border-slate-200 rounded-md px-3 py-1.5 text-slate-800 shadow-sm focus:outline-none focus:ring-1 focus:ring-teal-500 max-w-sm"
+            <FilterBar
+              actions={
+                <SegmentedControl
+                  label="Pair scope"
+                  value={scope}
+                  onChange={(v) => {
+                    setScope(v);
+                    setPage(1);
+                  }}
+                  options={[
+                    { value: 'all', label: 'All pairs' },
+                    { value: 'over_refusal', label: 'Over-refusals' },
+                    { value: 'regression', label: 'Regressions' },
+                  ]}
+                />
+              }
             >
-              {completedRuns.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.test_suite?.name || 'Suite'} — {formatDate(r.created_at)} ({r.id.slice(0, 8)})
-                </option>
-              ))}
-            </select>
+              <FilterSelect
+                label="Security"
+                value={securityFilter}
+                onChange={(v) => {
+                  setSecurityFilter(v);
+                  setPage(1);
+                }}
+                options={Object.entries(SECURITY_VERDICT_META).map(([value, m]) => ({ value, label: m.label }))}
+              />
+              <FilterSelect
+                label="Utility"
+                value={utilityFilter}
+                onChange={(v) => {
+                  setUtilityFilter(v);
+                  setPage(1);
+                }}
+                options={Object.entries(UTILITY_VERDICT_META).map(([value, m]) => ({ value, label: m.label }))}
+              />
+              <ClearFiltersButton
+                visible={hasFilters}
+                onClick={() => {
+                  setSecurityFilter('');
+                  setUtilityFilter('');
+                  setScope('all');
+                  setPage(1);
+                }}
+              />
+            </FilterBar>
+            <DataTable
+              label="Paired case outcomes"
+              columns={columns}
+              data={paged.items}
+              getRowId={(p) => p.pair_id}
+              isLoading={summaryQuery.isLoading}
+              onRowClick={(p) => setInspected(p)}
+              sort={sort}
+              onSortChange={(s) => {
+                setSort(s);
+                setPage(1);
+              }}
+              empty={
+                <EmptyState
+                  bare
+                  compact
+                  icon={Scale}
+                  title={hasFilters ? 'No pairs match these filters' : 'No paired evaluations'}
+                  description={
+                    hasFilters
+                      ? 'Adjust or clear the filters to see more pairs.'
+                      : 'The selected run did not record any adversarial/benign pairs.'
+                  }
+                >
+                  {!hasFilters && (
+                    <Button asChild variant="outline" size="sm">
+                      <Link href="/test-runs/new">
+                        <Play className="h-3.5 w-3.5" /> Launch test run
+                      </Link>
+                    </Button>
+                  )}
+                </EmptyState>
+              }
+            />
+            {filteredPairs.length > PAGE_SIZE && (
+              <Pagination
+                page={paged.page}
+                totalPages={paged.totalPages}
+                total={paged.total}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+                itemLabel="pairs"
+              />
+            )}
+          </Panel>
+
+          <div className="flex justify-end">
+            <Link
+              href="/evaluation/experiments"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              <FlaskConical className="h-3.5 w-3.5" /> Measure provenance accuracy with ground-truth experiments
+              <ArrowRight className="h-3 w-3" />
+            </Link>
           </div>
+        </>
+      )}
 
-          {/* Metric Overview Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Card className="border border-slate-200/80 shadow-sm bg-white p-4">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                Total Case Pairs
-              </span>
-              <div className="text-3xl font-bold font-mono text-slate-900 mt-1">
-                {utilitySummary?.total_pairs ?? 0}
+      <Dialog open={!!inspected} onOpenChange={(o) => !o && setInspected(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Pair {inspected?.pair_id}</DialogTitle>
+            <DialogDescription>Evaluation record returned by the security–utility endpoint.</DialogDescription>
+          </DialogHeader>
+          {inspected && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <VerdictPill meta={SECURITY_VERDICT_META[inspected.security_verdict]} />
+                <VerdictPill meta={UTILITY_VERDICT_META[inspected.utility_verdict]} />
+                {inspected.is_over_refusal && <StatusPill tone="warning" label="Over-refusal" />}
+                {inspected.is_utility_regression && <StatusPill tone="high" label="Utility regression" />}
               </div>
-              <p className="text-[10px] text-slate-500 mt-1">Paired adversarial vs benign controls</p>
-            </Card>
-
-            <Card className="border border-slate-200/80 shadow-sm bg-white p-4">
-              <span className="text-[11px] font-semibold text-teal-800 uppercase tracking-wider block">
-                Security Defense Rate
-              </span>
-              <div className="text-3xl font-bold font-mono text-teal-800 mt-1">
-                {(utilitySummary?.security_pass_rate_pct ?? 100).toFixed(1)}%
+              <div className="grid gap-3 text-xs sm:grid-cols-2">
+                <div>
+                  <p className="eyebrow mb-1">Adversarial case</p>
+                  {caseLink(inspected.adversarial_case_id)}
+                </div>
+                <div>
+                  <p className="eyebrow mb-1">Benign control</p>
+                  {caseLink(inspected.benign_case_id)}
+                </div>
+                <div>
+                  <p className="eyebrow mb-1">Evaluated</p>
+                  <span className="font-mono text-muted-foreground">{formatTimestamp(inspected.evaluated_at)}</span>
+                </div>
+                <div>
+                  <p className="eyebrow mb-1">Verdicts</p>
+                  <span className="font-mono text-muted-foreground">
+                    {humanize(inspected.security_verdict)} / {humanize(inspected.utility_verdict)}
+                  </span>
+                </div>
               </div>
-              <p className="text-[10px] text-slate-500 mt-1">Attacks successfully mitigated</p>
-            </Card>
-
-            <Card className="border border-slate-200/80 shadow-sm bg-white p-4">
-              <span className="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider block">
-                Benign Completion Rate
-              </span>
-              <div className="text-3xl font-bold font-mono text-emerald-700 mt-1">
-                {(utilitySummary?.benign_completion_rate_pct ?? 100).toFixed(1)}%
-              </div>
-              <p className="text-[10px] text-slate-500 mt-1">Normal prompt completion preserved</p>
-            </Card>
-
-            <Card className="border border-slate-200/80 shadow-sm bg-white p-4">
-              <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider block">
-                Over-Refusal Rate
-              </span>
-              <div className="text-3xl font-bold font-mono text-amber-700 mt-1">
-                {(utilitySummary?.over_refusal_rate_pct ?? 0).toFixed(1)}%
-              </div>
-              <p className="text-[10px] text-slate-500 mt-1">Benign tasks erroneously rejected</p>
-            </Card>
-          </div>
-
-          {/* Paired Evaluations Table */}
-          <Card className="border border-slate-200/80 shadow-sm bg-white overflow-hidden">
-            <CardHeader className="py-4 px-5 border-b border-slate-100">
-              <CardTitle className="text-xs font-semibold text-slate-600 uppercase tracking-wider flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Scale className="h-4 w-4 text-teal-600" />
-                  Paired Case Outcomes ({utilitySummary?.pairs?.length || 0})
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {isUtilityLoading ? (
-                <div className="p-5 space-y-2">
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-8 w-full" />
-                </div>
-              ) : !utilitySummary?.pairs || utilitySummary.pairs.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-500">
-                  No paired evaluations found for the selected test run.
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader className="bg-slate-50/75">
-                    <TableRow className="border-slate-100">
-                      <TableHead className="text-xs font-semibold text-slate-600">Pair ID</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 text-center">Security Verdict</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 text-center">Utility Verdict</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 text-center">Over-Refusal?</TableHead>
-                      <TableHead className="text-right text-xs font-semibold text-slate-600">Evaluated</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {utilitySummary.pairs.map((p: PairedEvaluationItem) => (
-                      <TableRow key={p.pair_id} className="hover:bg-slate-50/50">
-                        <TableCell className="py-3 font-mono text-xs font-medium text-slate-800">
-                          {p.pair_id}
-                        </TableCell>
-                        <TableCell className="py-3 text-center">
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] font-semibold ${
-                              p.security_verdict === 'PASSED'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                                : 'bg-rose-50 text-rose-700 border-rose-300'
-                            }`}
-                          >
-                            {p.security_verdict}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-3 text-center">
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] font-semibold ${
-                              p.utility_verdict === 'SATISFIED'
-                                ? 'bg-teal-50 text-teal-700 border-teal-300'
-                                : p.utility_verdict === 'OVER_REFUSAL'
-                                ? 'bg-amber-50 text-amber-700 border-amber-300'
-                                : 'bg-slate-100 text-slate-600'
-                            }`}
-                          >
-                            {p.utility_verdict}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-3 text-center">
-                          {p.is_over_refusal ? (
-                            <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-300 text-[10px] font-bold">
-                              YES
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-slate-400">No</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="py-3 text-right text-xs font-mono text-slate-500">
-                          {formatDate(p.evaluated_at)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tab 2: Research Experiments & Academic Metrics */}
-        <TabsContent value="experiments" className="space-y-6">
-          <Card className="border border-slate-200/80 shadow-sm bg-white overflow-hidden">
-            <CardHeader className="py-4 px-5 border-b border-slate-100">
-              <CardTitle className="text-xs font-semibold text-slate-600 uppercase tracking-wider flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Beaker className="h-4 w-4 text-teal-600" />
-                  Scientific Research Evaluation Experiments ({experiments?.length || 0})
-                </span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {isExperimentsLoading ? (
-                <div className="p-5 space-y-2">
-                  <Skeleton className="h-8 w-full" />
-                  <Skeleton className="h-8 w-full" />
-                </div>
-              ) : !experiments || experiments.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-500">
-                  No research experiments recorded yet. Click <strong>&quot;New Research Experiment&quot;</strong> to evaluate dynamic canary tainting with ground-truth manifests.
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader className="bg-slate-50/75">
-                    <TableRow className="border-slate-100">
-                      <TableHead className="text-xs font-semibold text-slate-600">Experiment</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600">Dataset</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 text-center">Status</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 text-center">Attribution Accuracy</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 text-center">Precision / Recall</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-600 text-center">Latency Overhead</TableHead>
-                      <TableHead className="text-right text-xs font-semibold text-slate-600">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {experiments.map((exp: EvaluationExperiment) => {
-                      const metrics = exp.results_summary?.metrics;
-                      return (
-                        <TableRow key={exp.id} className="hover:bg-slate-50/50">
-                          <TableCell className="py-3">
-                            <Link href={`/evaluation/experiments/${exp.id}`} className="font-semibold text-xs text-slate-900 hover:text-teal-700">
-                              {exp.name}
-                            </Link>
-                            {exp.description && (
-                              <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{exp.description}</p>
-                            )}
-                          </TableCell>
-                          <TableCell className="py-3 text-xs text-slate-700 font-medium">
-                            {exp.dataset_name}
-                          </TableCell>
-                          <TableCell className="py-3 text-center">
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] font-semibold ${
-                                exp.status === 'COMPLETED'
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                                  : exp.status === 'RUNNING'
-                                  ? 'bg-teal-50 text-teal-700 border-teal-300'
-                                  : 'bg-slate-50 text-slate-600'
-                              }`}
-                            >
-                              {exp.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-3 text-center">
-                            <span className="font-mono font-bold text-xs text-teal-800">
-                              {metrics ? `${(metrics.provenance_attribution_accuracy * 100).toFixed(1)}%` : '—'}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-3 text-center text-xs font-mono text-slate-700">
-                            {metrics ? `${(metrics.precision * 100).toFixed(0)}% / ${(metrics.recall * 100).toFixed(0)}%` : '—'}
-                          </TableCell>
-                          <TableCell className="py-3 text-center font-mono text-xs text-slate-700">
-                            {metrics ? `${metrics.execution_latency_overhead_ms.toFixed(0)} ms` : '—'}
-                          </TableCell>
-                          <TableCell className="py-3 text-right">
-                            {exp.status === 'DRAFT' ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 text-xs text-teal-700 hover:text-teal-900 gap-1 border-teal-200"
-                                onClick={() => runExperimentMutation.mutate(exp.id)}
-                                disabled={runExperimentMutation.isPending}
-                              >
-                                <Play className="h-3 w-3" /> Run
-                              </Button>
-                            ) : (
-                              <Link href={`/evaluation/experiments/${exp.id}`}>
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-teal-700 hover:text-teal-900">
-                                  <ArrowRight className="h-3.5 w-3.5" />
-                                </Button>
-                              </Link>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              <CodeViewer title="Details" value={inspected.details} emptyText="No additional details recorded" />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

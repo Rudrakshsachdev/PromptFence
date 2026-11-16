@@ -39,7 +39,7 @@ export function ConfirmDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription className="pt-2 text-sm text-slate-600 dark:text-slate-400">
+          <DialogDescription className="pt-1.5 leading-relaxed">
             {description}
           </DialogDescription>
         </DialogHeader>

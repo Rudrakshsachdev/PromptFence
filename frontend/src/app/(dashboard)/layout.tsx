@@ -4,25 +4,33 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { TopBar } from '@/components/layout/top-bar';
+import { LogoMark } from '@/components/shared/logo';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/use-auth';
-import { SidebarProvider, useSidebar } from '@/providers/sidebar-provider';
 import { cn } from '@/lib/utils';
+import { SidebarProvider, useSidebar } from '@/providers/sidebar-provider';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
 
   return (
-    <div className="min-h-screen bg-slate-50/70 dark:bg-slate-950 flex transition-colors">
+    <div className="flex min-h-screen bg-background">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:text-primary-foreground"
+      >
+        Skip to content
+      </a>
       <Sidebar />
       <div
         className={cn(
-          'flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out',
-          isCollapsed ? 'lg:ml-16' : 'lg:ml-60'
+          'flex min-w-0 flex-1 flex-col transition-[margin] duration-200 ease-out',
+          isCollapsed ? 'lg:ml-[60px]' : 'lg:ml-60',
         )}
       >
         <TopBar />
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto max-w-7xl w-full mx-auto">
-          {children}
+        <main id="main-content" className="w-full flex-1 px-4 py-6 md:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-[1440px]">{children}</div>
         </main>
       </div>
     </div>
@@ -41,10 +49,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-teal-600 border-t-transparent" />
-          <p className="text-xs font-mono text-slate-400">Initializing PromptFence Lab...</p>
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
+            <LogoMark className="h-5 w-5 animate-status-pulse" />
+          </span>
+          <p className="font-mono text-xs text-subtle-foreground">Verifying session…</p>
         </div>
       </div>
     );
@@ -56,7 +66,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider>
-      <DashboardContent>{children}</DashboardContent>
+      <TooltipProvider delayDuration={250}>
+        <DashboardContent>{children}</DashboardContent>
+      </TooltipProvider>
     </SidebarProvider>
   );
 }

@@ -2,69 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * PromptFence design tokens.
+ *
+ * The product ships a single dark, technical theme. Every colour is defined
+ * here once (as HSL channels so Tailwind opacity modifiers work) and consumed
+ * through semantic utilities: bg-background, bg-card, bg-surface, text-foreground,
+ * text-muted-foreground, border-border, text-primary, text-info, text-success,
+ * text-warning, text-critical. Pages must not hardcode slate/white/teal colours.
+ */
 @layer base {
-  :root {
-    /* Enterprise Light-First Palette */
-    --background: 210 40% 98%;          /* #F8FAFC */
-    --foreground: 222 47% 11%;          /* #0F172A */
+  :root,
+  .dark {
+    color-scheme: dark;
 
-    --card: 0 0% 100%;                  /* #FFFFFF */
-    --card-foreground: 222 47% 11%;
+    /* Surfaces */
+    --background: 221 50% 6%; /* #080D18 main canvas */
+    --sidebar: 220 49% 8%; /* #0B1220 navigation rail */
+    --card: 219 45% 12%; /* #111B2D primary surface */
+    --surface: 219 44% 15%; /* #162238 secondary surface / insets */
+    --surface-hover: 218 40% 18%;
+    --popover: 219 45% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    /* Ink */
+    --foreground: 210 40% 96%; /* #F1F5F9 */
+    --card-foreground: 210 40% 96%;
+    --popover-foreground: 210 40% 96%;
+    --muted: 219 44% 15%;
+    --muted-foreground: 215 20% 65%; /* #94A3B8 */
+    --subtle-foreground: 215 16% 47%; /* #64748B tertiary labels */
 
-    /* Security Brand Accents */
-    --primary: 173 80% 36%;             /* Teal-600 #0D9488 */
-    --primary-foreground: 0 0% 100%;
+    /* Lines */
+    --border: 216 32% 22%; /* #263449 */
+    --border-strong: 215 28% 30%;
+    --input: 216 32% 22%;
+    --ring: 235 89% 74%;
 
-    --secondary: 214 32% 96%;           /* Slate-100 */
-    --secondary-foreground: 215 25% 27%;/* Slate-700 */
-
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;    /* Slate-500 */
-
-    --accent: 173 80% 95%;              /* Teal-50 */
-    --accent-foreground: 173 80% 25%;   /* Teal-800 */
-
-    --destructive: 0 84% 60%;           /* Red-600 */
+    /* Brand + semantic accents */
+    --primary: 235 89% 74%; /* #818CF8 indigo */
+    --primary-foreground: 226 57% 12%;
+    --secondary: 219 44% 15%;
+    --secondary-foreground: 210 40% 96%;
+    --accent: 218 40% 18%;
+    --accent-foreground: 210 40% 96%;
+    --info: 188 86% 53%; /* #22D3EE cyan */
+    --success: 160 64% 52%; /* #34D399 */
+    --warning: 43 96% 56%; /* #FBBF24 */
+    --high: 27 96% 61%; /* #FB923C */
+    --critical: 0 91% 71%; /* #F87171 */
+    --low: 213 94% 68%; /* #60A5FA */
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 32% 91%;              /* Slate-200 #E2E8F0 */
-    --input: 214 32% 91%;
-    --ring: 173 80% 36%;
-
     --radius: 0.5rem;
-  }
-
-  .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
-
-    --card: 222 47% 10%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222 47% 10%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 173 80% 40%;
-    --primary-foreground: 222 47% 11%;
-
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 173 80% 40%;
   }
 }
 
@@ -72,43 +62,100 @@
   * {
     @apply border-border;
   }
+  html {
+    @apply bg-background;
+  }
   body {
-    @apply bg-background text-foreground font-sans antialiased selection:bg-teal-500/20 selection:text-teal-900;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  ::selection {
+    background: hsl(var(--primary) / 0.3);
+    color: hsl(var(--foreground));
+  }
+  /* Tabular numerals wherever numbers line up */
+  .tabular-nums,
+  td,
+  th {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Native form controls inherit the dark scheme */
+  select,
+  input,
+  textarea {
+    color-scheme: dark;
+  }
+  select option {
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
   }
 }
 
-/* Custom Scrollbar */
+@layer components {
+  /* Small uppercase section label used across panels and tables */
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-[0.06em] text-muted-foreground;
+  }
+  /* Technical identifier: ids, hashes, tokens, timestamps */
+  .mono-id {
+    @apply font-mono text-[12px] text-muted-foreground;
+  }
+  /* Faint dotted grid used behind the provenance flow */
+  .bg-grid {
+    background-image: radial-gradient(hsl(var(--border)) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+}
+
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border-strong)) transparent;
+}
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: hsl(var(--border));
   border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: hsl(var(--border-strong));
+  background-clip: content-box;
 }
 
-/* Subtle Card Glow & Elevation */
-.enterprise-card {
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.02);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.enterprise-card:hover {
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.03);
-}
-
-/* Pulse status animation */
+/* Live-state indicator for running executions */
 @keyframes status-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.92); }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
 }
 .animate-status-pulse {
-  animation: status-pulse 2.5s infinite ease-in-out;
+  animation: status-pulse 1.8s infinite ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Recharts: keep focus outlines off SVG wrappers (keyboard focus is on controls) */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
 }

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { KeyRound, Lock, LogIn, ShieldAlert } from 'lucide-react';
+import { Loader2, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/forms/form-field';
@@ -19,6 +19,13 @@ const loginSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
+
+/** Local seed accounts. Offered only outside production builds. */
+const SEED_ACCOUNTS = [
+  { label: 'Admin', email: 'admin@promptfence.internal', password: 'AdminSecurePass123!' },
+  { label: 'Researcher', email: 'researcher@promptfence.internal', password: 'ResearcherPass123!' },
+];
+const SHOW_SEED_ACCOUNTS = process.env.NODE_ENV !== 'production';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -61,98 +68,82 @@ export default function LoginPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Sign In to Portal
-        </h2>
-        <p className="text-xs text-slate-500">
-          Enter your authorized credentials to access PromptFence
-        </p>
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">Sign in</h2>
+        <p className="text-[13px] text-muted-foreground">Use your PromptFence account credentials.</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <FormField label="Email Address" id="email" error={errors.email?.message} required>
           <Input
             id="email"
             type="email"
-            placeholder="admin@promptfence.internal"
+            placeholder="you@organization.com"
+            aria-invalid={!!errors.email}
             {...register('email')}
             disabled={isLoading}
-            className="h-9 text-xs"
             autoComplete="email"
           />
         </FormField>
 
-        <FormField label="Password" id="password" error={errors.password?.message} required>
-          <PasswordInput
-            id="password"
-            placeholder="••••••••••••"
-            {...register('password')}
-            disabled={isLoading}
-            autoComplete="current-password"
-          />
-        </FormField>
-
-        <div className="flex items-center justify-end">
-          <Link
-            href="/forgot-password"
-            className="text-xs text-teal-600 hover:text-teal-700 font-medium hover:underline"
-          >
-            Forgot password?
-          </Link>
+        <div className="space-y-1.5">
+          <FormField label="Password" id="password" error={errors.password?.message} required>
+            <PasswordInput
+              id="password"
+              placeholder="••••••••••••"
+              aria-invalid={!!errors.password}
+              {...register('password')}
+              disabled={isLoading}
+              autoComplete="current-password"
+            />
+          </FormField>
+          <div className="flex justify-end">
+            <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+              Forgot password?
+            </Link>
+          </div>
         </div>
 
-        <Button
-          type="submit"
-          className="w-full h-9 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-2xs"
-          disabled={isLoading}
-        >
+        <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? (
-            <span className="flex items-center gap-1.5">
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Authenticating...
-            </span>
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Authenticating…
+            </>
           ) : (
-            <span className="flex items-center gap-1.5">
+            <>
               <LogIn className="h-3.5 w-3.5" /> Sign In
-            </span>
+            </>
           )}
         </Button>
       </form>
 
-      {/* Quick Test Credentials Helper Box for Developer Ease */}
-      <div className="rounded-lg border border-slate-200/80 bg-slate-50/80 p-3 text-[11px] space-y-1.5">
-        <div className="flex items-center justify-between text-slate-700 font-semibold">
-          <span>Seed Credentials</span>
-          <span className="text-[10px] font-mono text-slate-400">Click to fill</span>
+      {SHOW_SEED_ACCOUNTS && (
+        <div className="rounded-md border border-dashed border-border bg-surface/40 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="eyebrow">Development seed accounts</p>
+            <span className="text-[10px] text-subtle-foreground">Click to fill</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {SEED_ACCOUNTS.map((acct) => (
+              <button
+                key={acct.email}
+                type="button"
+                onClick={() => handleFillCredentials(acct.email, acct.password)}
+                className="min-w-0 rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              >
+                <span className="block text-xs font-medium text-foreground">{acct.label}</span>
+                <span className="block truncate font-mono text-[10px] text-subtle-foreground">{acct.email}</span>
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 pt-0.5">
-          <button
-            type="button"
-            onClick={() => handleFillCredentials('admin@promptfence.internal', 'AdminSecurePass123!')}
-            className="text-left p-1.5 rounded border border-slate-200/80 bg-white hover:border-teal-500 hover:bg-teal-50/30 transition-colors"
-          >
-            <p className="font-semibold text-slate-800">Admin</p>
-            <p className="text-[10px] text-slate-400 font-mono truncate">admin@promptfence.internal</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleFillCredentials('researcher@promptfence.internal', 'ResearcherPass123!')}
-            className="text-left p-1.5 rounded border border-slate-200/80 bg-white hover:border-teal-500 hover:bg-teal-50/30 transition-colors"
-          >
-            <p className="font-semibold text-slate-800">Researcher</p>
-            <p className="text-[10px] text-slate-400 font-mono truncate">researcher@promptfence.internal</p>
-          </button>
-        </div>
-      </div>
+      )}
 
-      <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800">
-        <p className="text-xs text-slate-500">
-          Need a security researcher account?{' '}
-          <Link href="/register" className="text-teal-600 font-semibold hover:underline">
-            Register here
-          </Link>
-        </p>
-      </div>
+      <p className="border-t border-border pt-4 text-center text-xs text-muted-foreground">
+        Need an account?{' '}
+        <Link href="/register" className="font-medium text-primary hover:underline">
+          Create one
+        </Link>
+      </p>
     </div>
   );
 }

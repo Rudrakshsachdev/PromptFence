@@ -1,277 +1,419 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { Suspense } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import {
-  CheckCircle2,
-  Cpu,
-  Database,
-  Laptop,
-  LogOut,
-  RefreshCw,
-  ShieldAlert,
+  Bell,
+  Building2,
+  Cable,
+  ExternalLink,
+  KeyRound,
+  RotateCcw,
+  Server,
+  Settings as SettingsIcon,
   ShieldCheck,
-  Terminal,
-  Trash2,
+  User as UserIcon,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
-import { ConfirmDialog } from '@/components/shared/confirm-dialog';
-import { Badge } from '@/components/ui/badge';
+import { DetailList } from '@/components/shared/detail-list';
+import { ErrorState } from '@/components/shared/error-state';
+import { CopyButton } from '@/components/shared/id-chip';
+import { Panel } from '@/components/shared/panel';
+import { PageSkeleton } from '@/components/shared/skeletons';
+import { StatusPill } from '@/components/shared/status-pill';
+import { UnavailableNotice } from '@/components/shared/unavailable';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useAuth } from '@/hooks/use-auth';
-import { formatDate } from '@/lib/utils';
-import { authService } from '@/services/auth.service';
-import { Session } from '@/types/auth';
-import { toast } from 'sonner';
+import { apiClient } from '@/lib/api-client';
+import { formatTimestamp, humanize } from '@/lib/format';
+import { getTargetTypeLabel } from '@/lib/status';
+import { cn } from '@/lib/utils';
+import { adapterService } from '@/services/adapter.service';
+import { ChangePasswordForm } from './_components/change-password-form';
+import { SessionsPanel } from './_components/sessions-panel';
 
-export default function SettingsPage() {
-  const { logout } = useAuth();
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(false);
-  const [sessionToRevoke, setSessionToRevoke] = useState<Session | null>(null);
-  const [logoutAllOpen, setLogoutAllOpen] = useState(false);
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-  const loadSessions = async () => {
-    setIsLoadingSessions(true);
-    try {
-      const data = await authService.getSessions();
-      setSessions(data);
-    } catch {
-      // Ignore if session fetch fails
-    } finally {
-      setIsLoadingSessions(false);
-    }
-  };
+const SECTIONS = [
+  { id: 'profile', label: 'Profile', icon: UserIcon },
+  { id: 'security', label: 'Security', icon: ShieldCheck },
+  { id: 'authentication', label: 'Authentication', icon: KeyRound },
+  { id: 'api', label: 'API configuration', icon: Cable },
+  { id: 'notifications', label: 'Notifications', icon: Bell },
+  { id: 'workspace', label: 'Workspace', icon: Building2 },
+  { id: 'system', label: 'System', icon: Server },
+] as const;
 
-  useEffect(() => {
-    loadSessions();
-  }, []);
+type SectionId = (typeof SECTIONS)[number]['id'];
 
-  const onRevokeSession = async (sessionId: string) => {
-    try {
-      await authService.revokeSession(sessionId);
-      toast.success('Session revoked successfully');
-      loadSessions();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        toast.error(err.message || 'Failed to revoke session');
-      }
-    } finally {
-      setSessionToRevoke(null);
-    }
-  };
+interface HealthResponse {
+  status: string;
+  app_name?: string;
+  environment?: string;
+  timestamp?: number;
+}
 
-  const onLogoutAll = async () => {
-    try {
-      await authService.logoutAll();
-      toast.success('All sessions terminated');
-      logout();
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        toast.error(err.message || 'Failed to terminate all sessions');
-      }
-    }
-  };
+interface ReadinessResponse {
+  status: string;
+  database?: string;
+  db_latency_ms?: number;
+}
+
+function SettingsContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requested = searchParams.get('section');
+  const active: SectionId = SECTIONS.some((s) => s.id === requested) ? (requested as SectionId) : 'profile';
+
+  const select = (id: SectionId) => router.replace(`${pathname}?section=${id}`, { scroll: false });
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6">
       <PageHeader
-        title="Settings & Security Diagnostics"
-        description="Environment configuration, active browser sessions, and security runtime parameters."
+        icon={SettingsIcon}
+        title="Settings"
+        description="Account security, authentication model, API connectivity and platform diagnostics."
       />
 
-      <div className="space-y-6">
-        {/* Security Controls Status */}
-        <Card className="border border-slate-200/80 bg-white shadow-2xs">
-          <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-teal-600" />
-              <span>Active Security Controls</span>
-            </CardTitle>
-            <Badge variant="outline" className="text-[10px] font-mono bg-emerald-50 text-emerald-700 border-emerald-200">
-              Guards Active
-            </Badge>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4 text-xs">
-            <div className="flex justify-between items-center py-1">
-              <div className="space-y-0.5">
-                <p className="font-semibold text-slate-800">Multi-Stage Outbound SSRF Validation</p>
-                <p className="text-[11px] text-slate-400">
-                  Blocks RFC 1918 subnets, loopback (127.0.0.1), and cloud metadata endpoints.
-                </p>
-              </div>
-              <span className="text-emerald-600 font-semibold flex items-center gap-1 font-mono text-[11px]">
-                <CheckCircle2 className="h-3 w-3" /> Enforced
-              </span>
-            </div>
-            <Separator />
+      <div className="grid gap-6 lg:grid-cols-[200px_minmax(0,1fr)]">
+        <nav aria-label="Settings sections" className="lg:sticky lg:top-20 lg:self-start">
+          <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0">
+            {SECTIONS.map((s) => {
+              const Icon = s.icon;
+              const isActive = s.id === active;
+              return (
+                <li key={s.id} className="shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => select(s.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'flex h-8 w-full items-center gap-2 whitespace-nowrap rounded-md px-2.5 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
+                      isActive
+                        ? 'bg-primary/10 text-foreground'
+                        : 'text-muted-foreground hover:bg-surface hover:text-foreground',
+                    )}
+                  >
+                    <Icon className={cn('h-4 w-4', isActive ? 'text-primary' : 'text-subtle-foreground')} aria-hidden />
+                    {s.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
-            <div className="flex justify-between items-center py-1">
-              <div className="space-y-0.5">
-                <p className="font-semibold text-slate-800">Password Hashing Cryptography</p>
-                <p className="text-[11px] text-slate-400">
-                  Argon2id (time_cost=3, memory_cost=64MB, parallelism=4) with bcrypt compatibility.
-                </p>
-              </div>
-              <span className="font-mono text-slate-700 font-medium text-[11px]">RFC 9106</span>
-            </div>
-            <Separator />
-
-            <div className="flex justify-between items-center py-1">
-              <div className="space-y-0.5">
-                <p className="font-semibold text-slate-800">Token Rotation & Reuse Detection</p>
-                <p className="text-[11px] text-slate-400">
-                  Single-use refresh token families invalidating compromised token chains immediately.
-                </p>
-              </div>
-              <span className="text-emerald-600 font-semibold flex items-center gap-1 font-mono text-[11px]">
-                <CheckCircle2 className="h-3 w-3" /> Armed
-              </span>
-            </div>
-            <Separator />
-
-            <div className="flex justify-between items-center py-1">
-              <div className="space-y-0.5">
-                <p className="font-semibold text-slate-800">Database Persistence Engine</p>
-                <p className="text-[11px] text-slate-400">
-                  PostgreSQL 16 Async Engine with JSONB parameter extension seams for Phase 2 canaries.
-                </p>
-              </div>
-              <span className="font-mono text-slate-700 font-medium text-[11px]">Connected</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Active Browser Sessions Management */}
-        <Card className="border border-slate-200/80 bg-white shadow-2xs">
-          <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Laptop className="h-4 w-4 text-teal-600" />
-              <span>Active Authentication Sessions</span>
-            </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setLogoutAllOpen(true)}
-              className="h-7 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
-            >
-              <LogOut className="h-3 w-3 mr-1" /> Terminate All
-            </Button>
-          </CardHeader>
-          <CardContent className="p-0">
-            {isLoadingSessions ? (
-              <div className="p-4 space-y-2">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-              </div>
-            ) : sessions.length === 0 ? (
-              <p className="p-4 text-xs text-slate-400">No additional active sessions recorded.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-slate-100 bg-slate-50/50">
-                    <TableHead className="text-[11px] font-semibold uppercase text-slate-500">Device / User Agent</TableHead>
-                    <TableHead className="text-[11px] font-semibold uppercase text-slate-500">Created</TableHead>
-                    <TableHead className="text-[11px] font-semibold uppercase text-slate-500 text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sessions.map((sess) => (
-                    <TableRow key={sess.id} className="hover:bg-slate-50/80 transition-colors">
-                      <TableCell className="text-xs font-mono text-slate-700">
-                        {sess.device_info || 'Current Desktop Session'}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono text-slate-400">
-                        {formatDate(sess.created_at)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSessionToRevoke(sess)}
-                          className="h-7 text-xs text-slate-400 hover:text-red-600 hover:bg-red-50"
-                        >
-                          Revoke
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Platform Architecture Information */}
-        <Card className="border border-slate-200/80 bg-white shadow-2xs">
-          <CardHeader className="pb-3 border-b border-slate-100">
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Terminal className="h-4 w-4 text-teal-600" />
-              <span>Platform Tier Specifications</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 pt-4 text-xs">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Frontend Tier</span>
-                <p className="font-semibold text-slate-800">Next.js 14 App Router</p>
-                <p className="text-[10px] text-slate-400">Port 3000</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Backend Tier</span>
-                <p className="font-semibold text-slate-800">FastAPI 4-Tier Layered</p>
-                <p className="text-[10px] text-slate-400">Port 8000</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Database</span>
-                <p className="font-semibold text-slate-800">PostgreSQL 16 Neon</p>
-                <p className="text-[10px] text-slate-400">Port 5432</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] uppercase font-bold text-slate-400">Phase 2 Extension</span>
-                <p className="font-semibold text-slate-800">Canary Tainting Seams</p>
-                <p className="text-[10px] text-slate-400">JSONB Parameters</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="min-w-0 space-y-4">
+          {active === 'profile' && <ProfileSection />}
+          {active === 'security' && (
+            <>
+              <Panel title="Password" description="Changing your password signs out all other sessions" icon={KeyRound}>
+                <ChangePasswordForm />
+              </Panel>
+              <SessionsPanel allowTerminateAll />
+            </>
+          )}
+          {active === 'authentication' && <AuthenticationSection />}
+          {active === 'api' && <ApiSection />}
+          {active === 'notifications' && (
+            <UnavailableNotice
+              title="Notification preferences are not supported"
+              description="The backend exposes no notification settings or delivery channels (email, webhook, Slack). The in-app notification menu is derived live from open critical findings and running executions and cannot be configured."
+            />
+          )}
+          {active === 'workspace' && (
+            <UnavailableNotice
+              title="Workspace management is not supported"
+              description="PromptFence currently runs as a single workspace. There is no API for workspaces, members or invitations; access is governed by per-user roles (Admin, Security Researcher, Viewer)."
+            />
+          )}
+          {active === 'system' && <SystemSection />}
+        </div>
       </div>
-
-      {/* Revoke Individual Session Dialog */}
-      <ConfirmDialog
-        open={!!sessionToRevoke}
-        onOpenChange={(open) => !open && setSessionToRevoke(null)}
-        title="Revoke Session?"
-        description="The device using this token will be immediately signed out and must re-authenticate."
-        confirmText="Revoke Session"
-        variant="destructive"
-        onConfirm={() => {
-          if (sessionToRevoke) {
-            onRevokeSession(sessionToRevoke.id);
-          }
-        }}
-      />
-
-      {/* Logout All Dialog */}
-      <ConfirmDialog
-        open={logoutAllOpen}
-        onOpenChange={setLogoutAllOpen}
-        title="Terminate All Active Sessions?"
-        description="This will invalidate all refresh token families across all browsers and devices, including your current session."
-        confirmText="Terminate All Sessions"
-        variant="destructive"
-        onConfirm={onLogoutAll}
-      />
     </div>
+  );
+}
+
+function ProfileSection() {
+  const { user } = useAuth();
+  return (
+    <Panel
+      title="Profile"
+      icon={UserIcon}
+      actions={
+        <Button asChild variant="outline" size="xs">
+          <Link href="/profile">Edit profile</Link>
+        </Button>
+      }
+    >
+      <DetailList
+        columns={2}
+        items={[
+          { label: 'Full name', value: user?.full_name || '—' },
+          { label: 'Email', value: user?.email, mono: true },
+          {
+            label: 'Roles',
+            value: user?.roles?.length ? (
+              <div className="flex flex-wrap gap-1">
+                {user.roles.map((r) => (
+                  <StatusPill key={r} tone="accent" label={humanize(r)} dot={false} />
+                ))}
+              </div>
+            ) : (
+              '—'
+            ),
+          },
+          {
+            label: 'Email verification',
+            value: (
+              <StatusPill
+                tone={user?.is_verified ? 'success' : 'warning'}
+                label={user?.is_verified ? 'Verified' : 'Not verified'}
+              />
+            ),
+          },
+          { label: 'Last sign-in', value: formatTimestamp(user?.last_login_at), mono: true },
+          { label: 'Member since', value: formatTimestamp(user?.created_at), mono: true },
+        ]}
+      />
+    </Panel>
+  );
+}
+
+function AuthenticationSection() {
+  return (
+    <>
+      <Panel title="Session model" icon={KeyRound} description="How this browser authenticates to the API">
+        <DetailList
+          columns={2}
+          items={[
+            {
+              label: 'Credential transport',
+              value: 'HttpOnly cookies, sent automatically with each API request',
+            },
+            {
+              label: 'Token visibility',
+              value: 'Tokens are never readable by this application or stored in browser storage',
+            },
+            {
+              label: 'Access token lifetime',
+              value: 'Short-lived; set by server configuration (default 15 minutes)',
+            },
+            {
+              label: 'Refresh tokens',
+              value: 'Single-use with rotation; reuse of a rotated token revokes the token family',
+            },
+            {
+              label: 'Silent refresh',
+              value: 'On a 401 response the client requests a new access token once, then retries',
+            },
+            {
+              label: 'Cookie flags',
+              value: 'SameSite and Secure attributes are set by server configuration',
+            },
+          ]}
+        />
+      </Panel>
+      <UnavailableNotice
+        title="Single sign-on and multi-factor authentication are not available"
+        description="The backend supports email + password authentication only. There is no API for SSO providers, MFA enrolment or personal API keys."
+      />
+    </>
+  );
+}
+
+function ApiSection() {
+  const adaptersQuery = useQuery({
+    queryKey: ['adapters'],
+    queryFn: () => adapterService.listAdapters(),
+  });
+
+  return (
+    <>
+      <Panel title="API endpoint" icon={Cable} description="Read-only; configured at build time via NEXT_PUBLIC_API_URL">
+        <DetailList
+          columns={2}
+          items={[
+            {
+              label: 'Base URL',
+              value: (
+                <span className="inline-flex items-center gap-1.5 font-mono text-xs">
+                  {API_BASE}
+                  <CopyButton value={API_BASE} label="Copy base URL" />
+                </span>
+              ),
+            },
+            { label: 'API version', value: '/api/v1', mono: true },
+            {
+              label: 'OpenAPI reference',
+              value: (
+                <a
+                  href={`${API_BASE}/docs`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  {`${API_BASE}/docs`} <ExternalLink className="h-3 w-3" />
+                </a>
+              ),
+            },
+            { label: 'Authentication', value: 'Cookie session (see Authentication)' },
+          ]}
+        />
+      </Panel>
+
+      <Panel
+        title="Execution adapters"
+        icon={Server}
+        description="Registered adapters the engine can use to reach targets (live from /api/v1/adapters)"
+      >
+        {adaptersQuery.isLoading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : adaptersQuery.isError ? (
+          <ErrorState error={adaptersQuery.error} onRetry={() => adaptersQuery.refetch()} compact />
+        ) : !adaptersQuery.data?.length ? (
+          <p className="text-xs italic text-subtle-foreground">No adapters registered.</p>
+        ) : (
+          <ul className="divide-y divide-border/70">
+            {adaptersQuery.data.map((a) => (
+              <li key={a.name} className="flex flex-col gap-1.5 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="text-[13px] font-medium text-foreground">
+                    {a.name}{' '}
+                    <span className="font-normal text-muted-foreground">· {getTargetTypeLabel(a.target_type)}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">{a.description}</p>
+                </div>
+                <div className="flex flex-wrap gap-1 sm:justify-end">
+                  {a.supported_capabilities.map((c) => (
+                    <span
+                      key={c}
+                      className="rounded border border-border bg-surface px-1.5 py-px font-mono text-[10px] text-muted-foreground"
+                    >
+                      {c}
+                    </span>
+                  ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      <UnavailableNotice
+        title="API keys are not supported"
+        description="There is no endpoint to issue or rotate API keys. Programmatic access uses the same cookie-based session as this application."
+      />
+    </>
+  );
+}
+
+function SystemSection() {
+  const health = useQuery({
+    queryKey: ['system-health'],
+    queryFn: () => apiClient<HealthResponse>('/api/v1/health'),
+    retry: false,
+  });
+  const ready = useQuery({
+    queryKey: ['system-ready'],
+    queryFn: () => apiClient<ReadinessResponse>('/api/v1/ready'),
+    retry: false,
+  });
+
+  const probes = [
+    {
+      label: 'API liveness',
+      path: '/api/v1/health',
+      ok: health.data?.status === 'healthy',
+      loading: health.isLoading,
+      error: health.error,
+      detail: health.data
+        ? `${health.data.app_name ?? 'API'} · ${health.data.environment ?? 'unknown env'}`
+        : undefined,
+    },
+    {
+      label: 'Database readiness',
+      path: '/api/v1/ready',
+      ok: ready.data?.status === 'ready',
+      loading: ready.isLoading,
+      error: ready.error,
+      detail:
+        ready.data?.db_latency_ms !== undefined
+          ? `${ready.data.database ?? 'database'} · ${ready.data.db_latency_ms} ms`
+          : undefined,
+    },
+  ];
+
+  return (
+    <>
+      <Panel
+        title="Service health"
+        icon={Server}
+        description="Live probes against the backend"
+        actions={
+          <Button
+            variant="outline"
+            size="xs"
+            onClick={() => {
+              health.refetch();
+              ready.refetch();
+            }}
+          >
+            <RotateCcw className={cn('h-3 w-3', (health.isFetching || ready.isFetching) && 'animate-spin')} /> Re-check
+          </Button>
+        }
+      >
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {probes.map((p) => (
+            <li key={p.path} className="rounded-md border border-border bg-background/50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[13px] font-medium text-foreground">{p.label}</span>
+                {p.loading ? (
+                  <Skeleton className="h-4 w-16" />
+                ) : (
+                  <StatusPill tone={p.ok ? 'success' : 'critical'} label={p.ok ? 'Healthy' : 'Unavailable'} />
+                )}
+              </div>
+              <p className="mt-1 font-mono text-[11px] text-subtle-foreground">GET {p.path}</p>
+              {p.detail && <p className="mt-1 text-xs text-muted-foreground">{p.detail}</p>}
+              {!p.loading && !p.ok && p.error instanceof Error && (
+                <p className="mt-1 font-mono text-[11px] text-critical">{p.error.message}</p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Panel>
+
+      <Panel
+        title="Platform security controls"
+        icon={ShieldCheck}
+        description="Documented server-side configuration — not a live probe"
+      >
+        <DetailList
+          columns={2}
+          items={[
+            {
+              label: 'Outbound SSRF validation',
+              value: 'Target URLs are checked against private (RFC 1918), loopback and cloud-metadata ranges',
+            },
+            { label: 'Password hashing', value: 'Argon2id, with bcrypt verification for legacy hashes' },
+            { label: 'Canary tokens', value: 'Session-bound tokens signed with HMAC-SHA256 and a versioned key' },
+            { label: 'Report integrity', value: 'SHA-256 content hash per artifact; secrets redacted from JSON evidence' },
+          ]}
+        />
+      </Panel>
+    </>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <SettingsContent />
+    </Suspense>
   );
 }

@@ -1,27 +1,32 @@
-'use client';
+import { Metadata } from 'next';
+import { LandingNavbar } from '@/components/landing/landing-navbar';
+import { LandingHero } from '@/components/landing/landing-hero';
+import { ProductPreview } from '@/components/landing/product-preview';
+import { FeaturesSection } from '@/components/landing/features-section';
+import { WorkflowSection } from '@/components/landing/workflow-section';
+import { ResearchSection } from '@/components/landing/research-section';
+import { LandingCta } from '@/components/landing/landing-cta';
+import { LandingFooter } from '@/components/landing/landing-footer';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+export const metadata: Metadata = {
+  title: 'PromptFence — AI Application Security Testing Lab',
+  description:
+    'Vercel-inspired security testing platform for AI applications. Dynamic session-bound canary tainting, adversarial evaluation, and provenance tracing.',
+};
 
-export default function RootPage() {
-  const router = useRouter();
-  const { isAuthenticated, isLoading } = useAuth();
-
-  useEffect(() => {
-    if (!isLoading) {
-      if (isAuthenticated) {
-        router.replace('/overview');
-      } else {
-        router.replace('/login');
-      }
-    }
-  }, [isAuthenticated, isLoading, router]);
-
+export default function RootLandingPage() {
   return (
-    <div className="flex h-screen items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" />
+    <div className="min-h-screen bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white font-sans antialiased">
+      <LandingNavbar />
+      <main>
+        <LandingHero />
+        <ProductPreview />
+        <FeaturesSection />
+        <WorkflowSection />
+        <ResearchSection />
+        <LandingCta />
+      </main>
+      <LandingFooter />
     </div>
   );
 }
-

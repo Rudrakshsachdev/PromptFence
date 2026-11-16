@@ -3,19 +3,21 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const alertVariants = cva(
-  'relative w-full rounded-lg border px-4 py-3 text-sm [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground [&>svg~*]:pl-7',
+  'relative w-full rounded-lg border px-4 py-3 text-[13px] [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-3.5 [&>svg]:h-4 [&>svg]:w-4 [&>svg~*]:pl-7',
   {
     variants: {
       variant: {
-        default: 'bg-background text-foreground',
-        destructive: 'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
-        success: 'border-emerald-500/50 text-emerald-800 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300 [&>svg]:text-emerald-600',
+        default: 'border-border bg-surface/60 text-foreground [&>svg]:text-muted-foreground',
+        info: 'border-info/25 bg-info/5 text-foreground [&>svg]:text-info',
+        warning: 'border-warning/25 bg-warning/5 text-foreground [&>svg]:text-warning',
+        destructive: 'border-critical/30 bg-critical/5 text-foreground [&>svg]:text-critical',
+        success: 'border-success/25 bg-success/5 text-foreground [&>svg]:text-success',
       },
     },
     defaultVariants: {
       variant: 'default',
     },
-  }
+  },
 );
 
 const Alert = React.forwardRef<
@@ -28,17 +30,21 @@ Alert.displayName = 'Alert';
 
 const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <h5 ref={ref} className={cn('mb-1 font-medium leading-none tracking-tight', className)} {...props} />
-  )
+    <h5 ref={ref} className={cn('mb-1 font-medium leading-tight', className)} {...props} />
+  ),
 );
 AlertTitle.displayName = 'AlertTitle';
 
-const AlertDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
-  ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn('text-sm [&_p]:leading-relaxed', className)} {...props} />
-  )
-);
+const AlertDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn('text-xs text-muted-foreground [&_p]:leading-relaxed', className)}
+    {...props}
+  />
+));
 AlertDescription.displayName = 'AlertDescription';
 
 export { Alert, AlertTitle, AlertDescription };
-

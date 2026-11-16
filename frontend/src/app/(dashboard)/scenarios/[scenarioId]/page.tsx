@@ -3,237 +3,195 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  ArrowLeft,
-  CheckCircle2,
-  Code2,
-  Copy,
-  Edit,
-  Layers,
-  ShieldAlert,
-  ShieldCheck,
-  Terminal,
-  Trash2,
-  Check,
-} from 'lucide-react';
-import { PageActions, PageHeader } from '@/components/layout/page-header';
+import { Code2, Crosshair, Info, LibraryBig, Pencil, SearchX, ShieldCheck, Terminal, Trash2 } from 'lucide-react';
+import { EmptyState } from '@/components/dashboard/empty-state';
+import { HeaderMeta, PageHeader } from '@/components/layout/page-header';
 import { CategoryBadge } from '@/components/shared/category-badge';
+import { CodeViewer } from '@/components/shared/code-viewer';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { DetailList } from '@/components/shared/detail-list';
+import { ErrorState } from '@/components/shared/error-state';
+import { IdChip } from '@/components/shared/id-chip';
+import { Panel } from '@/components/shared/panel';
 import { SeverityBadge } from '@/components/shared/severity-badge';
+import { PageSkeleton } from '@/components/shared/skeletons';
 import { StatusBadge } from '@/components/shared/status-badge';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useDeleteScenario, useScenario } from '@/hooks/use-scenarios';
-import { formatDate } from '@/lib/utils';
-import { ScenarioCategory, ScenarioSeverity } from '@/types/scenario';
-import { toast } from 'sonner';
+import { Switch } from '@/components/ui/switch';
+import { SCENARIO_CATEGORIES } from '@/constants/scenarios';
+import { useDeleteScenario, useScenario, useUpdateScenarioStatus } from '@/hooks/use-scenarios';
+import { ApiError } from '@/lib/api-client';
+import { formatTimestamp } from '@/lib/format';
+import { getSeverityMeta, getTargetTypeLabel } from '@/lib/status';
+import { formatRelativeTime } from '@/lib/utils';
+
+const TEMPLATE_VARIABLES = ['{canary}', '{canary_token}', '{canary_preview}', '{source_id}'];
 
 export default function ScenarioDetailPage() {
   const params = useParams();
   const scenarioId = params.scenarioId as string;
   const router = useRouter();
 
-  const { data: scenario, isLoading } = useScenario(scenarioId);
+  const { data: scenario, isLoading, error, refetch } = useScenario(scenarioId);
   const deleteMutation = useDeleteScenario();
+  const statusMutation = useUpdateScenarioStatus(scenarioId);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [copiedPayload, setCopiedPayload] = useState(false);
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6 max-w-5xl mx-auto">
-        <Skeleton className="h-8 w-44" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
+  if (isLoading) return <PageSkeleton />;
+
+  if (error && !(error instanceof ApiError && error.status === 404)) {
+    return <ErrorState title="Unable to load scenario" error={error} onRetry={() => refetch()} />;
   }
 
   if (!scenario) {
     return (
-      <div className="text-center py-16 space-y-4">
-        <h3 className="text-base font-bold text-slate-800">Scenario not found</h3>
-        <p className="text-xs text-slate-500">The requested attack vector does not exist or has been deleted.</p>
-        <Button asChild size="sm">
-          <Link href="/scenarios">Back to Scenario Library</Link>
-        </Button>
-      </div>
+      <EmptyState
+        icon={SearchX}
+        title="Scenario not found"
+        description="The requested scenario does not exist or has been deleted."
+        actionText="Back to scenario library"
+        actionHref="/scenarios"
+      />
     );
   }
 
-  const handleCopyPayload = () => {
-    navigator.clipboard.writeText(scenario.attack_input_template);
-    setCopiedPayload(true);
-    toast.success('Attack payload copied');
-    setTimeout(() => setCopiedPayload(false), 2000);
-  };
-
-  const targetsList = scenario.applicable_target_types || ['ALL'];
+  const categoryInfo = SCENARIO_CATEGORIES.find((c) => c.value === scenario.category);
+  const targets = scenario.applicable_target_types ?? [];
+  const usedVariables = TEMPLATE_VARIABLES.filter((v) => scenario.attack_input_template.includes(v));
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      <div>
-        <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs text-slate-500">
-          <Link href="/scenarios">
-            <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Scenario Library
-          </Link>
-        </Button>
-      </div>
-
+    <div className="space-y-6">
       <PageHeader
+        backHref="/scenarios"
+        backLabel="Scenario library"
+        icon={LibraryBig}
         title={scenario.name}
-        description={scenario.description || 'Adversarial Prompt Vector Definition & Assertion Bounds'}
+        description={scenario.description || undefined}
         badge={
-          <div className="flex items-center gap-2">
-            <CategoryBadge category={scenario.category as ScenarioCategory} />
-            <SeverityBadge severity={scenario.severity as ScenarioSeverity} />
-            <StatusBadge isActive={scenario.is_enabled} activeText="Armed" inactiveText="Disabled" />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <CategoryBadge category={scenario.category} />
+            <SeverityBadge severity={scenario.severity} />
+            <StatusBadge isActive={scenario.is_enabled} activeText="Enabled" inactiveText="Disabled" />
           </div>
         }
+        meta={
+          <>
+            <HeaderMeta label="ID">
+              <IdChip value={scenario.id} />
+            </HeaderMeta>
+            <HeaderMeta label="Updated">{formatRelativeTime(scenario.updated_at)}</HeaderMeta>
+          </>
+        }
       >
-        <PageActions>
-          <Button asChild variant="outline" size="sm" className="h-8 text-xs">
-            <Link href={`/scenarios/${scenarioId}/edit`}>
-              <Edit className="h-3.5 w-3.5 mr-1.5 text-slate-500" /> Edit Scenario
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setDeleteDialogOpen(true)}
-            className="h-8 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </PageActions>
+        <label className="flex h-8 items-center gap-2 rounded-md border border-border bg-card px-2.5 text-xs text-muted-foreground">
+          <Switch
+            checked={scenario.is_enabled}
+            disabled={statusMutation.isPending}
+            onCheckedChange={(checked) => statusMutation.mutate(checked)}
+            aria-label={scenario.is_enabled ? 'Disable scenario' : 'Enable scenario'}
+          />
+          {scenario.is_enabled ? 'Enabled' : 'Disabled'}
+        </label>
+        <Button asChild variant="outline" size="sm">
+          <Link href={`/scenarios/${scenarioId}/edit`}>
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </Link>
+        </Button>
+        <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+          <Trash2 className="h-3.5 w-3.5" /> Delete
+        </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Attack Input Inspector */}
-        <div className="md:col-span-2 space-y-6">
-          <Card className="border border-slate-200/80 bg-white shadow-2xs">
-            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Terminal className="h-4 w-4 text-teal-600" />
-                <span>Adversarial Attack Input Template</span>
-              </CardTitle>
-              <button
-                onClick={handleCopyPayload}
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 px-2 py-1 rounded hover:bg-slate-100"
-                title="Copy Payload"
-              >
-                {copiedPayload ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
-                <span>{copiedPayload ? 'Copied' : 'Copy'}</span>
-              </button>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <pre className="p-4 rounded-lg bg-slate-900 text-teal-300 font-mono text-xs overflow-x-auto border border-slate-800 leading-relaxed whitespace-pre-wrap">
-                {scenario.attack_input_template}
-              </pre>
-            </CardContent>
-          </Card>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          <Panel title="Attack technique" description="Input template dispatched to the target" icon={Terminal}>
+            <CodeViewer
+              title="attack_input_template"
+              value={scenario.attack_input_template}
+              language="text"
+              maxHeight={420}
+            />
+            {usedVariables.length > 0 && (
+              <p className="mt-2.5 text-[11px] text-muted-foreground">
+                Substituted at execution time:{' '}
+                {usedVariables.map((v) => (
+                  <code key={v} className="mr-1 rounded border border-info/30 bg-info/10 px-1 py-px font-mono text-info">
+                    {v}
+                  </code>
+                ))}
+              </p>
+            )}
+          </Panel>
 
-          {/* Expected Security Behavior */}
-          <Card className="border border-slate-200/80 bg-white shadow-2xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                <span>Expected Security Baseline</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4 text-xs text-slate-700 leading-relaxed">
-              {scenario.expected_behavior ? (
-                <p>{scenario.expected_behavior}</p>
-              ) : (
-                <p className="text-slate-400 italic">No explicit behavior specification provided.</p>
-              )}
-            </CardContent>
-          </Card>
+          <Panel title="Expected security behaviour" icon={ShieldCheck}>
+            {scenario.expected_behavior ? (
+              <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-foreground/90">
+                {scenario.expected_behavior}
+              </p>
+            ) : (
+              <p className="text-xs italic text-subtle-foreground">No expected behaviour specified.</p>
+            )}
+          </Panel>
 
-          {/* Assertion Configuration */}
-          <Card className="border border-slate-200/80 bg-white shadow-2xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Code2 className="h-4 w-4 text-teal-600" />
-                <span>Assertion Evaluation Rules</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4">
-              {scenario.assertion_config ? (
-                <pre className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 font-mono text-xs text-slate-800">
-                  {JSON.stringify(scenario.assertion_config, null, 2)}
-                </pre>
-              ) : (
-                <p className="text-xs text-slate-400 italic">No custom assertion rules defined.</p>
-              )}
-            </CardContent>
-          </Card>
+          <Panel title="Assertion configuration" icon={Code2}>
+            <CodeViewer
+              value={scenario.assertion_config ?? null}
+              language="json"
+              emptyText="No custom assertion rules defined. Default assertions for the category apply."
+              title="assertion_config"
+            />
+          </Panel>
         </div>
 
-        {/* Right Column: Metadata & Coverage */}
-        <div className="space-y-6">
-          <Card className="border border-slate-200/80 bg-white shadow-2xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
-                Target Coverage
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-4 space-y-2">
-              <p className="text-xs text-slate-500 mb-2">Compatible architectures:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {targetsList.map((t) => (
-                  <Badge key={t} variant="outline" className="font-mono text-[10px] bg-slate-50">
-                    {t}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="space-y-4">
+          <Panel title="Details" icon={Info}>
+            <DetailList
+              columns={1}
+              items={[
+                { label: 'Category', value: categoryInfo?.label ?? scenario.category, hint: categoryInfo?.description },
+                { label: 'Severity', value: getSeverityMeta(scenario.severity).label },
+                { label: 'Created', value: formatTimestamp(scenario.created_at), mono: true },
+                { label: 'Last modified', value: formatTimestamp(scenario.updated_at), mono: true },
+                { label: 'Owner', value: <IdChip value={scenario.owner_id} /> },
+              ]}
+            />
+            {categoryInfo && (
+              <p className="mt-4 border-t border-border pt-3 text-xs leading-relaxed text-muted-foreground">
+                {categoryInfo.description}
+              </p>
+            )}
+          </Panel>
 
-          <Card className="border border-slate-200/80 bg-white shadow-2xs">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-xs font-semibold uppercase text-slate-400 tracking-wider">
-                Scenario Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-4 text-xs">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Vector ID:</span>
-                <span className="font-mono text-[10px] text-slate-700 truncate max-w-[130px]">
-                  {scenario.id}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Created:</span>
-                <span className="font-mono text-[11px] text-slate-700">{formatDate(scenario.created_at)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Last Modified:</span>
-                <span className="font-mono text-[11px] text-slate-700">{formatDate(scenario.updated_at)}</span>
-              </div>
-            </CardContent>
-          </Card>
+          <Panel title="Target coverage" icon={Crosshair}>
+            {targets.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Applicable to all target types.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {targets.map((t) => (
+                  <li key={t} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-foreground">{getTargetTypeLabel(t)}</span>
+                    <span className="font-mono text-[11px] text-subtle-foreground">{t}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Delete Attack Scenario?"
-        description={`Are you sure you want to delete "${scenario.name}"? This action cannot be undone.`}
-        confirmText="Delete Scenario"
+        title="Delete scenario?"
+        description={`"${scenario.name}" will be permanently deleted and removed from every test suite that includes it. Completed runs keep their snapshot.`}
+        confirmText="Delete scenario"
         variant="destructive"
         isLoading={deleteMutation.isPending}
-        onConfirm={() => {
+        onConfirm={() =>
           deleteMutation.mutate(scenarioId, {
-            onSuccess: () => {
-              toast.success('Scenario deleted');
-              router.push('/scenarios');
-            },
-          });
-        }}
+            onSuccess: () => router.push('/scenarios'),
+          })
+        }
       />
     </div>
   );

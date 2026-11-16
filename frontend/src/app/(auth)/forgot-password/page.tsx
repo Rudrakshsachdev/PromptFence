@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, CheckCircle2, KeyRound, Mail } from 'lucide-react';
+import { ArrowLeft, Loader2, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/forms/form-field';
@@ -37,6 +37,7 @@ export default function ForgotPasswordPage() {
       setSubmitted(true);
       toast.success('Reset link dispatched if account exists');
     } catch {
+      // Same response either way to avoid account enumeration.
       setSubmitted(true);
     } finally {
       setIsLoading(false);
@@ -45,21 +46,19 @@ export default function ForgotPasswordPage() {
 
   if (submitted) {
     return (
-      <div className="space-y-4 text-center py-6">
-        <div className="h-12 w-12 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center mx-auto border border-teal-200">
-          <Mail className="h-6 w-6" />
-        </div>
+      <div className="space-y-5 py-2 text-center">
+        <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-info/30 bg-info/10 text-info">
+          <Mail className="h-5 w-5" />
+        </span>
         <div className="space-y-1">
-          <h3 className="text-base font-bold text-slate-900">Check Your Email</h3>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-            If an account exists with that address, we have dispatched recovery instructions.
+          <h3 className="text-base font-semibold text-foreground">Check your email</h3>
+          <p className="mx-auto max-w-xs text-[13px] leading-relaxed text-muted-foreground">
+            If an account exists for that address, recovery instructions have been sent.
           </p>
         </div>
-        <div className="pt-2">
-          <Button asChild variant="outline" size="sm" className="w-full h-9 text-xs">
-            <Link href="/login">Return to Sign In</Link>
-          </Button>
-        </div>
+        <Button asChild variant="outline" className="w-full">
+          <Link href="/login">Return to sign in</Link>
+        </Button>
       </div>
     );
   }
@@ -67,41 +66,42 @@ export default function ForgotPasswordPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Account Recovery
-        </h2>
-        <p className="text-xs text-slate-500">
-          Enter your authorized email to receive recovery instructions
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">Reset your password</h2>
+        <p className="text-[13px] text-muted-foreground">
+          Enter your account email and we&apos;ll send recovery instructions.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <FormField label="Account Email" id="email" error={errors.email?.message} required>
           <Input
             id="email"
             type="email"
-            placeholder="admin@promptfence.internal"
+            placeholder="you@organization.com"
+            aria-invalid={!!errors.email}
             {...register('email')}
             disabled={isLoading}
-            className="h-9 text-xs"
+            autoComplete="email"
           />
         </FormField>
 
-        <Button
-          type="submit"
-          className="w-full h-9 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-2xs"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Dispatching Instructions...' : 'Send Reset Link'}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Sending…
+            </>
+          ) : (
+            'Send Reset Link'
+          )}
         </Button>
       </form>
 
-      <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800">
+      <div className="border-t border-border pt-4 text-center">
         <Link
           href="/login"
-          className="inline-flex items-center text-xs text-slate-500 hover:text-slate-800 hover:underline"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ArrowLeft className="h-3 w-3 mr-1" /> Back to sign in
+          <ArrowLeft className="h-3 w-3" /> Back to sign in
         </Link>
       </div>
     </div>

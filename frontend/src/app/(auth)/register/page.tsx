@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { CheckCircle2, ShieldCheck, UserPlus } from 'lucide-react';
+import { CheckCircle2, Loader2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { FormField } from '@/components/forms/form-field';
@@ -67,18 +67,18 @@ export default function RegisterPage() {
 
   if (isSuccess) {
     return (
-      <div className="text-center py-6 space-y-4">
-        <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-200">
-          <CheckCircle2 className="h-6 w-6" />
-        </div>
+      <div className="space-y-5 py-2 text-center">
+        <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-success/30 bg-success/10 text-success">
+          <CheckCircle2 className="h-5 w-5" />
+        </span>
         <div className="space-y-1">
-          <h3 className="text-base font-bold text-slate-900">Account Created</h3>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto">
-            Your security researcher profile has been registered. You can now sign in to the portal.
+          <h3 className="text-base font-semibold text-foreground">Account Created</h3>
+          <p className="mx-auto max-w-xs text-[13px] leading-relaxed text-muted-foreground">
+            Your account has been registered. You can now sign in.
           </p>
         </div>
-        <Button asChild size="sm" className="w-full h-9 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white">
-          <Link href="/login">Proceed to Sign In</Link>
+        <Button asChild className="w-full">
+          <Link href="/login">Continue to sign in</Link>
         </Button>
       </div>
     );
@@ -87,22 +87,19 @@ export default function RegisterPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-          Create Researcher Account
-        </h2>
-        <p className="text-xs text-slate-500">
-          Join the PromptFence adversarial security testing platform
-        </p>
+        <h2 className="text-lg font-semibold tracking-tight text-foreground">Create Account</h2>
+        <p className="text-[13px] text-muted-foreground">Register for access to the PromptFence platform.</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <FormField label="Full Name" id="full_name" error={errors.full_name?.message} required>
           <Input
             id="full_name"
-            placeholder="Dr. Alex Rivera"
+            placeholder="Alex Rivera"
+            aria-invalid={!!errors.full_name}
             {...register('full_name')}
             disabled={isLoading}
-            className="h-9 text-xs"
+            autoComplete="name"
           />
         </FormField>
 
@@ -111,9 +108,10 @@ export default function RegisterPage() {
             id="email"
             type="email"
             placeholder="alex.rivera@organization.com"
+            aria-invalid={!!errors.email}
             {...register('email')}
             disabled={isLoading}
-            className="h-9 text-xs"
+            autoComplete="email"
           />
         </FormField>
 
@@ -122,56 +120,48 @@ export default function RegisterPage() {
           id="password"
           error={errors.password?.message}
           required
-          helperText="Min. 8 characters with 1 uppercase letter and 1 number."
+          helperText="At least 8 characters, including an uppercase letter and a number."
         >
           <PasswordInput
             id="password"
             placeholder="••••••••••••"
+            aria-invalid={!!errors.password}
             {...register('password')}
             disabled={isLoading}
+            autoComplete="new-password"
           />
         </FormField>
 
-        <FormField
-          label="Confirm Password"
-          id="confirm_password"
-          error={errors.confirm_password?.message}
-          required
-        >
+        <FormField label="Confirm Password" id="confirm_password" error={errors.confirm_password?.message} required>
           <PasswordInput
             id="confirm_password"
             placeholder="••••••••••••"
+            aria-invalid={!!errors.confirm_password}
             {...register('confirm_password')}
             disabled={isLoading}
+            autoComplete="new-password"
           />
         </FormField>
 
-        <Button
-          type="submit"
-          className="w-full h-9 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-2xs mt-2"
-          disabled={isLoading}
-        >
+        <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? (
-            <span className="flex items-center gap-1.5">
-              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              Registering Account...
-            </span>
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Creating account…
+            </>
           ) : (
-            <span className="flex items-center gap-1.5">
+            <>
               <UserPlus className="h-3.5 w-3.5" /> Register Account
-            </span>
+            </>
           )}
         </Button>
       </form>
 
-      <div className="text-center pt-2 border-t border-slate-100 dark:border-slate-800">
-        <p className="text-xs text-slate-500">
-          Already have an account?{' '}
-          <Link href="/login" className="text-teal-600 font-semibold hover:underline">
-            Sign in
-          </Link>
-        </p>
-      </div>
+      <p className="border-t border-border pt-4 text-center text-xs text-muted-foreground">
+        Already have an account?{' '}
+        <Link href="/login" className="font-medium text-primary hover:underline">
+          Sign in
+        </Link>
+      </p>
     </div>
   );
 }

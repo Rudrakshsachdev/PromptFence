@@ -28,11 +28,11 @@ export const SCENARIO_CATEGORIES: { value: ScenarioCategory; label: string; desc
   },
 ];
 
+/** Ordered most → least severe. `color` kept for backwards compatibility (token-based). */
 export const SCENARIO_SEVERITIES: { value: ScenarioSeverity; label: string; color: string }[] = [
-  { value: 'CRITICAL', label: 'Critical', color: 'bg-red-100 text-red-800 border-red-200' },
-  { value: 'HIGH', label: 'High', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-  { value: 'MEDIUM', label: 'Medium', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-  { value: 'LOW', label: 'Low', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-  { value: 'INFO', label: 'Info', color: 'bg-slate-100 text-slate-800 border-slate-200' },
+  { value: 'CRITICAL', label: 'Critical', color: 'border-critical/30 bg-critical/10 text-critical' },
+  { value: 'HIGH', label: 'High', color: 'border-high/30 bg-high/10 text-high' },
+  { value: 'MEDIUM', label: 'Medium', color: 'border-warning/30 bg-warning/10 text-warning' },
+  { value: 'LOW', label: 'Low', color: 'border-low/30 bg-low/10 text-low' },
+  { value: 'INFO', label: 'Informational', color: 'border-border bg-surface text-muted-foreground' },
 ];
-

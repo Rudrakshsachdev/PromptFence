@@ -39,7 +39,7 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
           />
           <button
             type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle-foreground hover:text-foreground focus:outline-none"
             onClick={() => setShowPassword(!showPassword)}
             tabIndex={-1}
           >
@@ -49,14 +49,14 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
 
         {showStrength && val.length > 0 && (
           <div className="space-y-1">
-            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-1.5 w-full bg-surface rounded-full overflow-hidden">
               <div
                 className={cn(
                   'h-full transition-all duration-300',
-                  strength <= 25 && 'bg-red-500 w-1/4',
-                  strength === 50 && 'bg-amber-500 w-2/4',
-                  strength === 75 && 'bg-blue-500 w-3/4',
-                  strength === 100 && 'bg-emerald-500 w-full'
+                  strength <= 25 && 'bg-critical w-1/4',
+                  strength === 50 && 'bg-warning w-2/4',
+                  strength === 75 && 'bg-info w-3/4',
+                  strength === 100 && 'bg-success w-full'
                 )}
               />
             </div>

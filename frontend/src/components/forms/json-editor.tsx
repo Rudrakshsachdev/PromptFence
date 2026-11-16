@@ -57,12 +57,12 @@ export function JsonEditor({
         placeholder={placeholder}
         style={height ? { minHeight: height, height } : undefined}
         className={cn(
-          'font-mono text-xs min-h-[140px] leading-relaxed bg-slate-900 text-teal-300 border-slate-800 focus-visible:ring-teal-500/40 p-3',
-          error && 'border-red-500 focus-visible:ring-red-500',
+          'font-mono text-xs min-h-[140px] leading-relaxed bg-background text-foreground/90 p-3',
+          error && 'border-critical/60 focus-visible:ring-critical/30',
           className
         )}
       />
-      {error && <p className="text-[11px] text-red-500 font-mono">{error}</p>}
+      {error && <p role="alert" className="text-[11px] text-critical font-mono">{error}</p>}
     </div>
   );
 }

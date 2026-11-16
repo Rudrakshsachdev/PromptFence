@@ -27,15 +27,19 @@ export function FormField({
   return (
     <div className={cn('space-y-1.5', className)}>
       <div className="flex items-center justify-between">
-        <Label htmlFor={id} className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-          {label} {required && <span className="text-red-500">*</span>}
+        <Label htmlFor={id} className="text-xs font-medium text-foreground">
+          {label} {required && <span className="text-critical" aria-hidden>*</span>}
         </Label>
       </div>
       {children}
       {note && !error && (
-        <p className="text-[11px] text-slate-400 dark:text-slate-500">{note}</p>
+        <p className="text-[11px] leading-relaxed text-muted-foreground">{note}</p>
       )}
-      {error && <p className="text-[11px] font-medium text-red-500">{error}</p>}
+      {error && (
+        <p role="alert" className="text-[11px] font-medium text-critical">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

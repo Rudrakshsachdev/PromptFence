@@ -1,250 +1,328 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ExternalLink,
-  FolderKanban,
-  MoreVertical,
+  Layers,
+  ListChecks,
+  MoreHorizontal,
+  Pencil,
+  Play,
   Plus,
+  Power,
   RefreshCw,
-  Search,
-  ShieldAlert,
   Trash2,
-  Wrench,
 } from 'lucide-react';
 import { EmptyState } from '@/components/dashboard/empty-state';
+import { StatsCard } from '@/components/dashboard/stats-card';
 import { SearchInput } from '@/components/forms/search-input';
-import { PageActions, PageHeader } from '@/components/layout/page-header';
+import { PageHeader } from '@/components/layout/page-header';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { DataTable, type DataTableColumn } from '@/components/shared/data-table';
+import { ClearFiltersButton, FilterBar, FilterSelect } from '@/components/shared/filter-bar';
+import { Pagination } from '@/components/shared/pagination';
+import { Panel } from '@/components/shared/panel';
 import { StatusBadge } from '@/components/shared/status-badge';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useDeleteTestSuite, useTestSuites } from '@/hooks/use-test-suites';
+import { useTestRuns } from '@/hooks/use-test-runs';
+import { formatNumber } from '@/lib/format';
 import { formatDate } from '@/lib/utils';
-import { TestSuite } from '@/types/test-suite';
-import { toast } from 'sonner';
+import type { TestSuite } from '@/types/test-suite';
+import { LastRunCell } from '../targets/_components/last-run-cell';
+import { latestRunBy } from '../targets/_components/target-utils';
+import { useToggleSuiteStatus } from './_components/use-suite-mutations';
+
+const PAGE_SIZE = 50;
+const RUN_SAMPLE = 100;
+
+const scenarioCount = (s: TestSuite) => s.scenario_count ?? s.suite_test_cases?.length ?? 0;
 
 export default function TestSuitesPage() {
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearch = useDebounce(searchTerm, 250);
-
-  const { data, isLoading, refetch, isRefetching } = useTestSuites(page, 50);
-  const deleteMutation = useDeleteTestSuite();
+  const [statusFilter, setStatusFilter] = useState('');
   const [suiteToDelete, setSuiteToDelete] = useState<TestSuite | null>(null);
+  const debouncedSearch = useDebounce(searchTerm, 200);
 
-  const allItems = data?.items || [];
-  const suites = allItems.filter((s) =>
-    debouncedSearch
-      ? s.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        (s.description && s.description.toLowerCase().includes(debouncedSearch.toLowerCase()))
-      : true
-  );
+  const { data, isLoading, error, refetch, isRefetching } = useTestSuites(page, PAGE_SIZE);
+  const runs = useTestRuns({ page: 1, page_size: RUN_SAMPLE });
+  const deleteMutation = useDeleteTestSuite();
+  const toggleStatus = useToggleSuiteStatus();
+
+  const allItems = useMemo(() => data?.items ?? [], [data]);
+  const lastRuns = useMemo(() => latestRunBy(runs.data?.items, 'test_suite_id'), [runs.data]);
+
+  const filtered = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase();
+    return allItems.filter((s) => {
+      const matchesSearch =
+        !q || s.name.toLowerCase().includes(q) || (s.description ?? '').toLowerCase().includes(q);
+      const matchesStatus = !statusFilter || (statusFilter === 'ENABLED' ? s.is_active : !s.is_active);
+      return matchesSearch && matchesStatus;
+    });
+  }, [allItems, debouncedSearch, statusFilter]);
+
+  const hasFilters = !!searchTerm || !!statusFilter;
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('');
+  };
+
+  const enabledCount = allItems.filter((s) => s.is_active).length;
+  const totalScenarios = allItems.reduce((sum, s) => sum + scenarioCount(s), 0);
+  const emptySuites = allItems.filter((s) => scenarioCount(s) === 0).length;
+
+  const columns: DataTableColumn<TestSuite>[] = [
+    {
+      id: 'name',
+      header: 'Suite',
+      sortValue: (s) => s.name.toLowerCase(),
+      cell: (s) => (
+        <div className="min-w-0 max-w-[340px]">
+          <Link
+            href={`/test-suites/${s.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="block truncate font-medium text-foreground hover:text-primary"
+          >
+            {s.name}
+          </Link>
+          {s.description && <p className="truncate text-xs text-muted-foreground">{s.description}</p>}
+        </div>
+      ),
+    },
+    {
+      id: 'scenarios',
+      header: 'Scenarios',
+      align: 'right',
+      sortValue: scenarioCount,
+      cell: (s) => {
+        const n = scenarioCount(s);
+        return (
+          <span className={`font-mono text-xs tabular-nums ${n === 0 ? 'text-warning' : 'text-foreground'}`}>
+            {n}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      sortValue: (s) => (s.is_active ? 1 : 0),
+      cell: (s) => <StatusBadge isActive={s.is_active} activeText="Enabled" inactiveText="Disabled" />,
+    },
+    {
+      id: 'last-run',
+      header: (
+        <SimpleTooltip label={`Derived from the ${RUN_SAMPLE} most recent test runs`}>
+          <span className="cursor-help underline decoration-dotted underline-offset-4">Last execution</span>
+        </SimpleTooltip>
+      ),
+      hideBelow: 'sm',
+      sortValue: (s) => {
+        const r = lastRuns.get(s.id);
+        return r ? new Date(r.started_at ?? r.created_at).getTime() : null;
+      },
+      cell: (s) => <LastRunCell run={lastRuns.get(s.id)} />,
+    },
+    {
+      id: 'created',
+      header: 'Created',
+      align: 'right',
+      hideBelow: 'lg',
+      sortValue: (s) => new Date(s.created_at).getTime(),
+      cell: (s) => (
+        <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">{formatDate(s.created_at)}</span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: <span className="sr-only">Actions</span>,
+      align: 'right',
+      headerClassName: 'w-10',
+      cell: (s) => (
+        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${s.name}`}>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem asChild>
+                <Link href={`/test-suites/${s.id}`}>
+                  <ExternalLink /> Open
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/test-suites/${s.id}/edit`}>
+                  <Pencil /> Edit details
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/test-runs/new">
+                  <Play /> Launch test run
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={toggleStatus.isPending}
+                onSelect={() => toggleStatus.mutate({ id: s.id, isActive: !s.is_active })}
+              >
+                <Power /> {s.is_active ? 'Disable' : 'Enable'}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => setSuiteToDelete(s)}
+                className="text-critical focus:text-critical [&_svg]:text-critical"
+              >
+                <Trash2 /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
       <PageHeader
-        title="Test Suites"
-        description="Organize attack scenarios into ordered test suites for security regression evaluations and compliance checks."
-        badge={
-          <Badge variant="outline" className="text-xs font-mono font-medium bg-slate-100 text-slate-700">
-            {allItems.length} Suites
-          </Badge>
-        }
+        title="Test suites"
+        description="Ordered collections of attack scenarios, executed together against a target."
       >
-        <PageActions>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            className="h-8 text-xs text-slate-600"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${isRefetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button asChild size="sm" className="h-8 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white shadow-2xs">
-            <Link href="/test-suites/new">
-              <Plus className="h-3.5 w-3.5 mr-1.5" /> Create Test Suite
-            </Link>
-          </Button>
-        </PageActions>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
+          <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? 'animate-spin' : ''}`} /> Refresh
+        </Button>
+        <Button asChild size="sm">
+          <Link href="/test-suites/new">
+            <Plus className="h-3.5 w-3.5" /> Create suite
+          </Link>
+        </Button>
       </PageHeader>
 
-      {/* Filter and Search Bar */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 max-w-md">
-          <SearchInput
-            placeholder="Search test suites by name or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatsCard title="Suites" value={formatNumber(data?.total)} icon={Layers} isLoading={isLoading} />
+        <StatsCard
+          title="Enabled"
+          value={formatNumber(enabledCount)}
+          subtitle={data && data.total > allItems.length ? 'On this page' : 'Available for runs'}
+          icon={Power}
+          isLoading={isLoading}
+        />
+        <StatsCard
+          title="Scenario assignments"
+          value={formatNumber(totalScenarios)}
+          subtitle="Across listed suites"
+          icon={ListChecks}
+          isLoading={isLoading}
+        />
+        <StatsCard
+          title="Empty suites"
+          value={formatNumber(emptySuites)}
+          subtitle="No scenarios assigned"
+          icon={Layers}
+          tone="warning"
+          isLoading={isLoading}
+        />
       </div>
 
-      {/* Test Suites Table */}
-      <Card className="border border-slate-200/80 bg-white shadow-2xs overflow-hidden dark:border-slate-800 dark:bg-slate-900">
-        <CardContent className="p-0">
-          {isLoading ? (
-            <div className="p-6 space-y-3">
-              {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-12 w-full rounded" />
-              ))}
-            </div>
-          ) : suites.length === 0 ? (
-            <div className="p-12">
+      <Panel flush>
+        <FilterBar
+          actions={
+            !isLoading && (
+              <span className="text-xs text-muted-foreground">
+                {formatNumber(filtered.length)} of {formatNumber(allItems.length)} shown
+              </span>
+            )
+          }
+        >
+          <SearchInput
+            placeholder="Search name or description"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onClear={() => setSearchTerm('')}
+          />
+          <FilterSelect
+            label="Status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: 'ENABLED', label: 'Enabled' },
+              { value: 'DISABLED', label: 'Disabled' },
+            ]}
+          />
+          <ClearFiltersButton visible={hasFilters} onClick={clearFilters} />
+        </FilterBar>
+
+        <DataTable
+          label="Test suites"
+          columns={columns}
+          data={filtered}
+          getRowId={(s) => s.id}
+          isLoading={isLoading}
+          error={error}
+          onRetry={() => refetch()}
+          onRowClick={(s) => router.push(`/test-suites/${s.id}`)}
+          empty={
+            hasFilters ? (
               <EmptyState
-                icon={FolderKanban}
-                title="No test suites found"
-                description={
-                  searchTerm
-                    ? 'No test suites match your search query.'
-                    : 'Group adversarial scenarios together by creating your first evaluation suite.'
-                }
-                actionText={searchTerm ? undefined : 'Create First Suite'}
-                actionHref={searchTerm ? undefined : '/test-suites/new'}
+                bare
+                compact
+                icon={Layers}
+                title="No suites match these filters"
+                description="Adjust the search or status filter."
+                actionText="Clear filters"
+                onAction={clearFilters}
               />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="border-b border-slate-100 bg-slate-50/60 hover:bg-slate-50/60">
-                  <TableHead className="text-[11px] font-semibold uppercase text-slate-500">Suite Identity</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase text-slate-500">Scenarios Included</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase text-slate-500">Status</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase text-slate-500 text-right">Created</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase text-slate-500 text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {suites.map((suite) => {
-                  const scenarioCount = suite.suite_test_cases?.length ?? 0;
-                  return (
-                    <TableRow key={suite.id} className="hover:bg-slate-50/80 transition-colors">
-                      {/* Name & Description */}
-                      <TableCell className="max-w-[280px]">
-                        <div className="flex items-center gap-2.5">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-purple-50 text-purple-600 dark:border-slate-700 dark:bg-slate-800 dark:text-purple-400">
-                            <FolderKanban className="h-3.5 w-3.5" />
-                          </div>
-                          <div className="min-w-0">
-                            <Link
-                              href={`/test-suites/${suite.id}`}
-                              className="font-semibold text-xs text-slate-900 hover:text-teal-600 transition-colors truncate block"
-                            >
-                              {suite.name}
-                            </Link>
-                            {suite.description && (
-                              <p className="text-[11px] text-slate-400 truncate max-w-[240px]">
-                                {suite.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </TableCell>
+            ) : (
+              <EmptyState
+                bare
+                icon={Layers}
+                title="No test suites yet"
+                description="Create a suite, then assign scenarios from the library to build a repeatable evaluation."
+                actionText="Create suite"
+                actionHref="/test-suites/new"
+              />
+            )
+          }
+        />
 
-                      {/* Scenarios Count Badge */}
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] font-mono px-2 py-0.5 bg-slate-50 text-slate-700 border-slate-200 flex items-center gap-1.5 w-fit"
-                        >
-                          <ShieldAlert className="h-3 w-3 text-teal-600" />
-                          <span>{scenarioCount} scenarios</span>
-                        </Badge>
-                      </TableCell>
+        {data && data.total_pages > 1 && (
+          <Pagination
+            page={page}
+            totalPages={data.total_pages}
+            total={data.total}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+            itemLabel="suites"
+          />
+        )}
+      </Panel>
 
-                      {/* Status */}
-                      <TableCell>
-                        <StatusBadge isActive={suite.is_active} />
-                      </TableCell>
-
-                      {/* Created */}
-                      <TableCell className="text-right text-[11px] font-mono text-slate-400">
-                        {formatDate(suite.created_at)}
-                      </TableCell>
-
-                      {/* Actions */}
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                              <MoreVertical className="h-3.5 w-3.5 text-slate-500" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 text-xs">
-                            <DropdownMenuLabel className="text-[10px] uppercase font-bold text-slate-400">
-                              Suite Options
-                            </DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/test-suites/${suite.id}`} className="cursor-pointer">
-                                <ExternalLink className="mr-2 h-3.5 w-3.5 text-slate-500" />
-                                <span>Inspect Scenarios</span>
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/test-suites/${suite.id}/edit`} className="cursor-pointer">
-                                <Wrench className="mr-2 h-3.5 w-3.5 text-slate-500" />
-                                <span>Edit Suite Info</span>
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => setSuiteToDelete(suite)}
-                              className="cursor-pointer text-red-600 focus:text-red-700"
-                            >
-                              <Trash2 className="mr-2 h-3.5 w-3.5 text-red-500" />
-                              <span>Delete Suite</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={!!suiteToDelete}
         onOpenChange={(open) => !open && setSuiteToDelete(null)}
-        title="Delete Test Suite?"
-        description={`Are you sure you want to delete "${suiteToDelete?.name}"? The contained scenarios will remain intact in your scenario library.`}
-        confirmText="Delete Suite"
+        title="Delete test suite?"
+        description={`“${suiteToDelete?.name}” will be removed. Its scenarios remain in the scenario library and past runs keep their records.`}
+        confirmText="Delete suite"
         variant="destructive"
         isLoading={deleteMutation.isPending}
         onConfirm={() => {
           if (suiteToDelete) {
             deleteMutation.mutate(suiteToDelete.id, {
-              onSuccess: () => {
-                setSuiteToDelete(null);
-                toast.success('Test suite deleted successfully');
-              },
+              onSuccess: () => setSuiteToDelete(null),
             });
           }
         }}
