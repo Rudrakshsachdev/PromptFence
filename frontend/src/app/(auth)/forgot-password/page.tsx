@@ -5,10 +5,8 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Loader2, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { FormField } from '@/components/forms/form-field';
+import { ArrowLeft, Mail } from 'lucide-react';
+import { AuthCard, AuthHeader, AuthInput, AuthButton } from '@/components/auth';
 import { authService } from '@/services/auth.service';
 import { toast } from 'sonner';
 
@@ -37,7 +35,7 @@ export default function ForgotPasswordPage() {
       setSubmitted(true);
       toast.success('Reset link dispatched if account exists');
     } catch {
-      // Same response either way to avoid account enumeration.
+      // Uniform response to avoid account enumeration
       setSubmitted(true);
     } finally {
       setIsLoading(false);
@@ -46,64 +44,67 @@ export default function ForgotPasswordPage() {
 
   if (submitted) {
     return (
-      <div className="space-y-5 py-2 text-center">
-        <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-info/30 bg-info/10 text-info">
-          <Mail className="h-5 w-5" />
-        </span>
-        <div className="space-y-1">
-          <h3 className="text-base font-semibold text-foreground">Check your email</h3>
-          <p className="mx-auto max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-            If an account exists for that address, recovery instructions have been sent.
+      <AuthCard>
+        <div className="py-2 text-center flex flex-col items-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-blue-600 mb-4">
+            <Mail className="h-6 w-6" />
+          </span>
+          <h2 className="text-xl font-bold tracking-tight text-neutral-950">
+            Check your email
+          </h2>
+          <p className="mt-2 text-sm text-neutral-500 leading-relaxed max-w-xs">
+            If an account exists for that address, recovery instructions have been sent. Please check your inbox and spam folder.
           </p>
+          <div className="mt-6 w-full">
+            <Link
+              href="/login"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-900 shadow-xs transition-all hover:bg-neutral-50 hover:border-neutral-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
+            >
+              Return to sign in
+            </Link>
+          </div>
         </div>
-        <Button asChild variant="outline" className="w-full">
-          <Link href="/login">Return to sign in</Link>
-        </Button>
-      </div>
+      </AuthCard>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">Reset your password</h2>
-        <p className="text-[13px] text-muted-foreground">
-          Enter your account email and we&apos;ll send recovery instructions.
-        </p>
-      </div>
+    <AuthCard>
+      <AuthHeader
+        title="Forgot your password?"
+        description="Enter your account email and we'll send you recovery instructions."
+        showLogo
+      />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        <FormField label="Account Email" id="email" error={errors.email?.message} required>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@organization.com"
-            aria-invalid={!!errors.email}
-            {...register('email')}
-            disabled={isLoading}
-            autoComplete="email"
-          />
-        </FormField>
+        <AuthInput
+          id="email"
+          label="Account Email"
+          type="email"
+          placeholder="you@organization.com"
+          autoComplete="email"
+          required
+          disabled={isLoading}
+          error={errors.email?.message}
+          {...register('email')}
+        />
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Sending…
-            </>
-          ) : (
-            'Send Reset Link'
-          )}
-        </Button>
+        <div className="pt-2">
+          <AuthButton type="submit" isLoading={isLoading} loadingText="Sending…">
+            Send Reset Link
+          </AuthButton>
+        </div>
       </form>
 
-      <div className="border-t border-border pt-4 text-center">
+      <div className="mt-6 border-t border-neutral-100 pt-5 text-center">
         <Link
           href="/login"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-950 transition-colors"
         >
-          <ArrowLeft className="h-3 w-3" /> Back to sign in
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Back to sign in</span>
         </Link>
       </div>
-    </div>
+    </AuthCard>
   );
 }

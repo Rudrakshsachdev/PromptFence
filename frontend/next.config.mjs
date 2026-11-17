@@ -9,6 +9,11 @@ const nextConfig = {
         destination: '/login',
         permanent: false,
       },
+      {
+        source: '/signup',
+        destination: '/register',
+        permanent: false,
+      },
     ];
   },
   async rewrites() {

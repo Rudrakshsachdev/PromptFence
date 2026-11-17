@@ -5,11 +5,8 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Loader2, LogIn } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { FormField } from '@/components/forms/form-field';
-import { PasswordInput } from '@/components/forms/password-input';
+import { LogIn } from 'lucide-react';
+import { AuthCard, AuthHeader, AuthInput, AuthPasswordInput, AuthButton } from '@/components/auth';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
@@ -20,7 +17,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-/** Local seed accounts. Offered only outside production builds. */
+/** Local seed accounts for convenient development testing. */
 const SEED_ACCOUNTS = [
   { label: 'Admin', email: 'admin@promptfence.internal', password: 'AdminSecurePass123!' },
   { label: 'Researcher', email: 'researcher@promptfence.internal', password: 'ResearcherPass123!' },
@@ -30,6 +27,7 @@ const SHOW_SEED_ACCOUNTS = process.env.NODE_ENV !== 'production';
 export default function LoginPage() {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const {
     register,
@@ -66,61 +64,70 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">Sign in</h2>
-        <p className="text-[13px] text-muted-foreground">Use your PromptFence account credentials.</p>
-      </div>
+    <AuthCard>
+      <AuthHeader
+        title="Welcome back"
+        description="Sign in to your PromptFence security testing lab"
+        showLogo
+      />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        <FormField label="Email Address" id="email" error={errors.email?.message} required>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@organization.com"
-            aria-invalid={!!errors.email}
-            {...register('email')}
-            disabled={isLoading}
-            autoComplete="email"
-          />
-        </FormField>
+        <AuthInput
+          id="email"
+          label="Email Address"
+          type="email"
+          placeholder="you@organization.com"
+          autoComplete="email"
+          required
+          disabled={isLoading}
+          error={errors.email?.message}
+          {...register('email')}
+        />
 
-        <div className="space-y-1.5">
-          <FormField label="Password" id="password" error={errors.password?.message} required>
-            <PasswordInput
-              id="password"
-              placeholder="••••••••••••"
-              aria-invalid={!!errors.password}
-              {...register('password')}
+        <AuthPasswordInput
+          id="password"
+          label="Password"
+          placeholder="••••••••••••"
+          autoComplete="current-password"
+          required
+          disabled={isLoading}
+          error={errors.password?.message}
+          {...register('password')}
+        />
+
+        <div className="flex items-center justify-between pt-0.5">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
               disabled={isLoading}
-              autoComplete="current-password"
+              className="h-4 w-4 rounded border-neutral-300 text-neutral-950 focus:ring-neutral-950 focus:ring-offset-0"
             />
-          </FormField>
-          <div className="flex justify-end">
-            <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
-              Forgot password?
-            </Link>
-          </div>
+            <span className="text-xs text-neutral-600">Remember me</span>
+          </label>
+
+          <Link
+            href="/forgot-password"
+            className="text-xs font-medium text-neutral-600 hover:text-neutral-950 transition-colors underline-offset-4 hover:underline"
+          >
+            Forgot password?
+          </Link>
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Authenticating…
-            </>
-          ) : (
-            <>
-              <LogIn className="h-3.5 w-3.5" /> Sign In
-            </>
-          )}
-        </Button>
+        <AuthButton type="submit" isLoading={isLoading} loadingText="Signing in…">
+          <LogIn className="h-4 w-4" />
+          <span>Sign In</span>
+        </AuthButton>
       </form>
 
       {SHOW_SEED_ACCOUNTS && (
-        <div className="rounded-md border border-dashed border-border bg-surface/40 p-3">
+        <div className="mt-6 rounded-lg border border-neutral-200/90 bg-neutral-50/80 p-3">
           <div className="mb-2 flex items-center justify-between">
-            <p className="eyebrow">Development seed accounts</p>
-            <span className="text-[10px] text-subtle-foreground">Click to fill</span>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
+              Development Accounts
+            </p>
+            <span className="text-[10px] text-neutral-400">Click to fill</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {SEED_ACCOUNTS.map((acct) => (
@@ -128,22 +135,24 @@ export default function LoginPage() {
                 key={acct.email}
                 type="button"
                 onClick={() => handleFillCredentials(acct.email, acct.password)}
-                className="min-w-0 rounded-md border border-border bg-card px-2.5 py-2 text-left transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                className="rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-left transition-all hover:border-neutral-400 hover:shadow-2xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-950"
               >
-                <span className="block text-xs font-medium text-foreground">{acct.label}</span>
-                <span className="block truncate font-mono text-[10px] text-subtle-foreground">{acct.email}</span>
+                <span className="block text-xs font-semibold text-neutral-900">{acct.label}</span>
+                <span className="block truncate font-mono text-[10px] text-neutral-500">
+                  {acct.email}
+                </span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      <p className="border-t border-border pt-4 text-center text-xs text-muted-foreground">
-        Need an account?{' '}
-        <Link href="/register" className="font-medium text-primary hover:underline">
-          Create one
+      <p className="mt-6 border-t border-neutral-100 pt-5 text-center text-xs text-neutral-600">
+        Don&apos;t have an account?{' '}
+        <Link href="/register" className="font-semibold text-neutral-950 hover:underline">
+          Create an account
         </Link>
       </p>
-    </div>
+    </AuthCard>
   );
 }

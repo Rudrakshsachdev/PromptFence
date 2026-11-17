@@ -6,11 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AlertTriangle, ArrowLeft, KeyRound, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AlertTriangle, ArrowLeft, KeyRound } from 'lucide-react';
+import { AuthCard, AuthHeader, AuthPasswordInput, AuthButton } from '@/components/auth';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FormField } from '@/components/forms/form-field';
-import { PasswordInput } from '@/components/forms/password-input';
 import { authService } from '@/services/auth.service';
 import { toast } from 'sonner';
 
@@ -44,6 +42,10 @@ function ResetPasswordForm() {
     formState: { errors },
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      new_password: '',
+      confirm_password: '',
+    },
   });
 
   const passwordVal = watch('new_password');
@@ -74,18 +76,22 @@ function ResetPasswordForm() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">Set a new password</h2>
-        <p className="text-[13px] text-muted-foreground">Choose a strong password you haven&apos;t used before.</p>
-      </div>
+    <AuthCard>
+      <AuthHeader
+        title="Set a new password"
+        description="Choose a strong password you haven't used before."
+        showLogo
+      />
 
       {!token && (
-        <div role="alert" className="flex gap-2.5 rounded-md border border-warning/25 bg-warning/5 px-3 py-2.5 text-xs">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
-          <p className="text-muted-foreground">
-            This link has no reset token. Open the link from your recovery email, or{' '}
-            <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+        <div
+          role="alert"
+          className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"
+        >
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+          <p className="leading-relaxed">
+            This link is missing a reset token. Open the link from your recovery email, or{' '}
+            <Link href="/forgot-password" className="font-semibold text-neutral-950 underline">
               request a new one
             </Link>
             .
@@ -94,58 +100,49 @@ function ResetPasswordForm() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        <FormField
-          label="New Password"
+        <AuthPasswordInput
           id="new_password"
-          error={errors.new_password?.message}
+          label="New Password"
+          placeholder="••••••••••••"
+          showStrength
+          strengthValue={passwordVal}
+          autoComplete="new-password"
           required
           helperText="At least 8 characters, including an uppercase letter and a number."
-        >
-          <PasswordInput
-            id="new_password"
-            placeholder="••••••••••••"
-            showStrength
-            value={passwordVal}
-            aria-invalid={!!errors.new_password}
-            {...register('new_password')}
-            disabled={isLoading}
-            autoComplete="new-password"
-          />
-        </FormField>
+          disabled={isLoading}
+          error={errors.new_password?.message}
+          {...register('new_password')}
+        />
 
-        <FormField label="Confirm New Password" id="confirm_password" error={errors.confirm_password?.message} required>
-          <PasswordInput
-            id="confirm_password"
-            placeholder="••••••••••••"
-            aria-invalid={!!errors.confirm_password}
-            {...register('confirm_password')}
-            disabled={isLoading}
-            autoComplete="new-password"
-          />
-        </FormField>
+        <AuthPasswordInput
+          id="confirm_password"
+          label="Confirm New Password"
+          placeholder="••••••••••••"
+          autoComplete="new-password"
+          required
+          disabled={isLoading}
+          error={errors.confirm_password?.message}
+          {...register('confirm_password')}
+        />
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Updating…
-            </>
-          ) : (
-            <>
-              <KeyRound className="h-3.5 w-3.5" /> Save new password
-            </>
-          )}
-        </Button>
+        <div className="pt-2">
+          <AuthButton type="submit" isLoading={isLoading} loadingText="Updating…">
+            <KeyRound className="h-4 w-4" />
+            <span>Save new password</span>
+          </AuthButton>
+        </div>
       </form>
 
-      <div className="border-t border-border pt-4 text-center">
+      <div className="mt-6 border-t border-neutral-100 pt-5 text-center">
         <Link
           href="/login"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-950 transition-colors"
         >
-          <ArrowLeft className="h-3 w-3" /> Back to sign in
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Back to sign in</span>
         </Link>
       </div>
-    </div>
+    </AuthCard>
   );
 }
 
@@ -153,12 +150,16 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div className="space-y-4" aria-busy="true">
-          <Skeleton className="h-5 w-40" />
-          <Skeleton className="h-9 w-full" />
-          <Skeleton className="h-9 w-full" />
-          <Skeleton className="h-9 w-full" />
-        </div>
+        <AuthCard>
+          <div className="space-y-4 py-4" aria-busy="true">
+            <Skeleton className="mx-auto h-8 w-8 rounded-full" />
+            <Skeleton className="mx-auto h-6 w-48" />
+            <Skeleton className="mx-auto h-4 w-64" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </AuthCard>
       }
     >
       <ResetPasswordForm />

@@ -5,11 +5,8 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { CheckCircle2, Loader2, UserPlus } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { FormField } from '@/components/forms/form-field';
-import { PasswordInput } from '@/components/forms/password-input';
+import { CheckCircle2, UserPlus } from 'lucide-react';
+import { AuthCard, AuthHeader, AuthInput, AuthPasswordInput, AuthButton } from '@/components/auth';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
 
@@ -39,10 +36,19 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
+    defaultValues: {
+      full_name: '',
+      email: '',
+      password: '',
+      confirm_password: '',
+    },
   });
+
+  const passwordVal = watch('password');
 
   const onSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
@@ -67,101 +73,101 @@ export default function RegisterPage() {
 
   if (isSuccess) {
     return (
-      <div className="space-y-5 py-2 text-center">
-        <span className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg border border-success/30 bg-success/10 text-success">
-          <CheckCircle2 className="h-5 w-5" />
-        </span>
-        <div className="space-y-1">
-          <h3 className="text-base font-semibold text-foreground">Account Created</h3>
-          <p className="mx-auto max-w-xs text-[13px] leading-relaxed text-muted-foreground">
-            Your account has been registered. You can now sign in.
+      <AuthCard>
+        <div className="py-2 text-center flex flex-col items-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600 mb-4">
+            <CheckCircle2 className="h-6 w-6" />
+          </span>
+          <h2 className="text-xl font-bold tracking-tight text-neutral-950">
+            Account Created
+          </h2>
+          <p className="mt-2 text-sm text-neutral-500 leading-relaxed max-w-xs">
+            Your account has been registered successfully. You can now sign in to your PromptFence workspace.
           </p>
+          <div className="mt-6 w-full">
+            <Link
+              href="/login"
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 text-sm font-semibold text-white shadow-xs transition-all hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
+            >
+              Continue to sign in
+            </Link>
+          </div>
         </div>
-        <Button asChild className="w-full">
-          <Link href="/login">Continue to sign in</Link>
-        </Button>
-      </div>
+      </AuthCard>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight text-foreground">Create Account</h2>
-        <p className="text-[13px] text-muted-foreground">Register for access to the PromptFence platform.</p>
-      </div>
+    <AuthCard>
+      <AuthHeader
+        title="Create your account"
+        description="Start testing and securing your AI applications against adversarial threats"
+        showLogo
+      />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        <FormField label="Full Name" id="full_name" error={errors.full_name?.message} required>
-          <Input
-            id="full_name"
-            placeholder="Alex Rivera"
-            aria-invalid={!!errors.full_name}
-            {...register('full_name')}
-            disabled={isLoading}
-            autoComplete="name"
-          />
-        </FormField>
-
-        <FormField label="Work Email Address" id="email" error={errors.email?.message} required>
-          <Input
-            id="email"
-            type="email"
-            placeholder="alex.rivera@organization.com"
-            aria-invalid={!!errors.email}
-            {...register('email')}
-            disabled={isLoading}
-            autoComplete="email"
-          />
-        </FormField>
-
-        <FormField
-          label="Password"
-          id="password"
-          error={errors.password?.message}
+        <AuthInput
+          id="full_name"
+          label="Full Name"
+          placeholder="Alex Rivera"
+          autoComplete="name"
           required
+          disabled={isLoading}
+          error={errors.full_name?.message}
+          {...register('full_name')}
+        />
+
+        <AuthInput
+          id="email"
+          label="Work Email Address"
+          type="email"
+          placeholder="alex.rivera@organization.com"
+          autoComplete="email"
+          required
+          disabled={isLoading}
+          error={errors.email?.message}
+          {...register('email')}
+        />
+
+        <AuthPasswordInput
+          id="password"
+          label="Password"
+          placeholder="••••••••••••"
+          autoComplete="new-password"
+          required
+          showStrength
+          strengthValue={passwordVal}
           helperText="At least 8 characters, including an uppercase letter and a number."
-        >
-          <PasswordInput
-            id="password"
-            placeholder="••••••••••••"
-            aria-invalid={!!errors.password}
-            {...register('password')}
-            disabled={isLoading}
-            autoComplete="new-password"
-          />
-        </FormField>
+          disabled={isLoading}
+          error={errors.password?.message}
+          {...register('password')}
+        />
 
-        <FormField label="Confirm Password" id="confirm_password" error={errors.confirm_password?.message} required>
-          <PasswordInput
-            id="confirm_password"
-            placeholder="••••••••••••"
-            aria-invalid={!!errors.confirm_password}
-            {...register('confirm_password')}
-            disabled={isLoading}
-            autoComplete="new-password"
-          />
-        </FormField>
+        <AuthPasswordInput
+          id="confirm_password"
+          label="Confirm Password"
+          placeholder="••••••••••••"
+          autoComplete="new-password"
+          required
+          disabled={isLoading}
+          error={errors.confirm_password?.message}
+          {...register('confirm_password')}
+        />
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Creating account…
-            </>
-          ) : (
-            <>
-              <UserPlus className="h-3.5 w-3.5" /> Register Account
-            </>
-          )}
-        </Button>
+        <div className="pt-2">
+          <AuthButton type="submit" isLoading={isLoading} loadingText="Creating account…">
+            <UserPlus className="h-4 w-4" />
+            <span>Register Account</span>
+          </AuthButton>
+        </div>
       </form>
 
-      <p className="border-t border-border pt-4 text-center text-xs text-muted-foreground">
+      <p className="mt-6 border-t border-neutral-100 pt-5 text-center text-xs text-neutral-600">
         Already have an account?{' '}
-        <Link href="/login" className="font-medium text-primary hover:underline">
+        <Link href="/login" className="font-semibold text-neutral-950 hover:underline">
           Sign in
         </Link>
       </p>
-    </div>
+    </AuthCard>
   );
 }
