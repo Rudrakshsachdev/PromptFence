@@ -1,5 +1,7 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-auth';
+import { PERMISSIONS } from '@/constants/permissions';
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -80,6 +82,7 @@ const RUNS_PAGE_SIZE = 20;
 const FINDING_RUN_SAMPLE = 10;
 
 export default function TargetDetailPage() {
+  const { can } = usePermissions();
   const params = useParams();
   const targetId = params.targetId as string;
   const router = useRouter();
@@ -292,46 +295,56 @@ export default function TargetDetailPage() {
           </>
         }
       >
-        <Button variant="outline" size="sm" onClick={runValidation} disabled={validateMutation.isPending}>
-          {validateMutation.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Radar className="h-3.5 w-3.5" />
-          )}
-          Validate connection
-        </Button>
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/targets/${targetId}/edit`}>
-            <Pencil className="h-3.5 w-3.5" /> Edit
-          </Link>
-        </Button>
+        {can(PERMISSIONS.targetsValidate) && (
+          <Button variant="outline" size="sm" onClick={runValidation} disabled={validateMutation.isPending}>
+            {validateMutation.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Radar className="h-3.5 w-3.5" />
+            )}
+            Validate connection
+          </Button>
+        )}
+        {can(PERMISSIONS.targetsWrite) && (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/targets/${targetId}/edit`}>
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </Link>
+          </Button>
+        )}
         <Button asChild size="sm">
           <Link href="/test-runs/new">
             <Play className="h-3.5 w-3.5" /> Launch test run
           </Link>
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon-sm" aria-label="More actions">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem
-              disabled={toggleStatus.isPending}
-              onSelect={() => toggleStatus.mutate({ id: target.id, isActive: !target.is_active })}
-            >
-              <Power /> {target.is_active ? 'Disable target' : 'Enable target'}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => setDeleteOpen(true)}
-              className="text-critical focus:text-critical [&_svg]:text-critical"
-            >
-              <Trash2 /> Delete target
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {(can(PERMISSIONS.targetsWrite) || can(PERMISSIONS.targetsDelete)) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon-sm" aria-label="More actions">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {can(PERMISSIONS.targetsWrite) && (
+                <DropdownMenuItem
+                  disabled={toggleStatus.isPending}
+                  onSelect={() => toggleStatus.mutate({ id: target.id, isActive: !target.is_active })}
+                >
+                  <Power /> {target.is_active ? 'Disable target' : 'Enable target'}
+                </DropdownMenuItem>
+              )}
+              {can(PERMISSIONS.targetsWrite) && can(PERMISSIONS.targetsDelete) && <DropdownMenuSeparator />}
+              {can(PERMISSIONS.targetsDelete) && (
+                <DropdownMenuItem
+                  onSelect={() => setDeleteOpen(true)}
+                  className="text-critical focus:text-critical [&_svg]:text-critical"
+                >
+                  <Trash2 /> Delete target
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </PageHeader>
 
       {/* Endpoint bar */}

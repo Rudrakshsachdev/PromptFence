@@ -20,6 +20,7 @@ import { StatusPill } from '@/components/shared/status-pill';
 import { Button } from '@/components/ui/button';
 import { SCENARIO_CATEGORIES } from '@/constants/scenarios';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useTargetComparisons } from '@/hooks/use-analytics';
 import { useFindings } from '@/hooks/use-findings';
 import { formatNumber, formatTimestamp, shortId } from '@/lib/format';
 import {
@@ -56,6 +57,9 @@ function FindingsView() {
   const category = pick(sp.get('category'), CATEGORY_VALUES);
   const sort = pick(sp.get('sort'), SORTS) || 'newest';
   const query = sp.get('q') ?? '';
+  const target = /^[0-9a-f-]{36}$/i.test(sp.get('target') ?? '') ? (sp.get('target') as string) : '';
+  // Targets with recorded executions (and therefore possible findings); cached, shared with analytics.
+  const targetOptions = useTargetComparisons();
   const page = Math.max(1, Number(sp.get('page')) || 1);
 
   const update = (patch: Record<string, string | number | null>) => {
@@ -82,6 +86,7 @@ function FindingsView() {
     status: status || undefined,
     category: category || undefined,
     search: query || undefined,
+    target_id: target || undefined,
   };
 
   const findings = useFindings({
@@ -104,7 +109,7 @@ function FindingsView() {
     }),
   });
 
-  const hasFilters = !!(severity || status || category || query);
+  const hasFilters = !!(severity || status || category || query || target);
 
   const columns: DataTableColumn<TaintFinding>[] = useMemo(
     () => [
@@ -247,6 +252,14 @@ function FindingsView() {
             value={category}
             onChange={(v) => update({ category: v })}
             options={SCENARIO_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+          />
+          <FilterSelect
+            label="Target"
+            value={target}
+            onChange={(v) => update({ target: v || null })}
+            options={(targetOptions.data ?? [])
+              .filter((t) => t.runs_count > 0)
+              .map((t) => ({ value: t.target_id, label: t.target_name }))}
           />
           <FilterSelect
             label="Sort"

@@ -18,9 +18,7 @@ def require_role(required_role: str) -> Callable:
         current_user: Annotated[User, Depends(require_active_user)],
         db: Annotated[AsyncSession, Depends(get_db)],
     ) -> User:
-        role_repo = RoleRepository(db)
-        user_roles = await role_repo.get_user_roles(current_user.id)
-        role_names = [ur.role.name for ur in user_roles if ur.role]
+        role_names, _ = await RoleRepository(db).get_role_and_permission_names(current_user.id)
 
         if "admin" in role_names:
             return current_user  # Admin bypass
@@ -39,14 +37,13 @@ def require_permission(required_permission: str) -> Callable:
         current_user: Annotated[User, Depends(require_active_user)],
         db: Annotated[AsyncSession, Depends(get_db)],
     ) -> User:
-        role_repo = RoleRepository(db)
-        user_roles = await role_repo.get_user_roles(current_user.id)
-        role_names = [ur.role.name for ur in user_roles if ur.role]
+        role_names, permissions = await RoleRepository(db).get_role_and_permission_names(
+            current_user.id
+        )
 
         if "admin" in role_names:
             return current_user  # Admin bypass
 
-        permissions = await role_repo.get_user_permissions(current_user.id)
         if required_permission not in permissions:
             raise AuthorizationError(f"Permission '{required_permission}' is required for this action")
 

@@ -1,5 +1,7 @@
 'use client';
 
+import { RequirePermission } from '@/components/shared/require-permission';
+import { PERMISSIONS } from '@/constants/permissions';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { LibraryBig } from 'lucide-react';
@@ -7,7 +9,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { useCreateScenario } from '@/hooks/use-scenarios';
 import { ScenarioForm } from '../_components/scenario-form';
 
-export default function NewScenarioPage() {
+function NewScenarioPageContent() {
   const router = useRouter();
   const createMutation = useCreateScenario();
 
@@ -32,5 +34,13 @@ export default function NewScenarioPage() {
         }
       />
     </div>
+  );
+}
+
+export default function NewScenarioPage() {
+  return (
+    <RequirePermission permission={PERMISSIONS.scenariosWrite} backHref="/scenarios" backLabel="Back to scenarios">
+      <NewScenarioPageContent />
+    </RequirePermission>
   );
 }

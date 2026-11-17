@@ -1,5 +1,7 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-auth';
+import { PERMISSIONS } from '@/constants/permissions';
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -60,6 +62,7 @@ import type { TestRun, TestRunStatus } from '@/types/test-run';
 const RUN_SAMPLE = 100;
 
 export default function OverviewPage() {
+  const { can } = usePermissions();
   const router = useRouter();
   const [days, setDays] = useState(30);
 
@@ -295,11 +298,13 @@ export default function OverviewPage() {
         description="Posture, execution activity and open risk across every registered target."
       >
         <DateRangeSelect value={days} onChange={setDays} />
-        <Button asChild variant="outline" size="sm">
-          <Link href="/targets/new">
-            <Plus className="h-3.5 w-3.5" /> Register target
-          </Link>
-        </Button>
+        {can(PERMISSIONS.targetsWrite) && (
+          <Button asChild variant="outline" size="sm">
+            <Link href="/targets/new">
+              <Plus className="h-3.5 w-3.5" /> Register target
+            </Link>
+          </Button>
+        )}
         <Button asChild size="sm">
           <Link href="/test-runs/new">
             <Play className="h-3.5 w-3.5" /> Launch test run

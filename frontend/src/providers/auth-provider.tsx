@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { authService } from '@/services/auth.service';
 import { ApiError, onSessionExpired } from '@/lib/api-client';
-import { DEFAULT_AUTHENTICATED_ROUTE } from '@/lib/auth-redirect';
+import { getHomeRoute } from '@/lib/roles';
 import { User } from '@/types/auth';
 
 interface LoginOptions {
   /** Already-validated in-app path to open after sign-in (see getSafeRedirect). */
-  redirectTo?: string;
+  redirectTo?: string | null;
 }
 
 interface AuthContextType {
@@ -76,7 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!currentUser) {
       throw new ApiError(SESSION_NOT_ESTABLISHED_MESSAGE, 401, 'SESSION_NOT_ESTABLISHED');
     }
-    router.replace(options.redirectTo ?? DEFAULT_AUTHENTICATED_ROUTE);
+    // A requested deep link wins; otherwise land on the workspace for the user's role.
+    router.replace(options.redirectTo ?? getHomeRoute(currentUser));
   };
 
   const register = async (data: { email: string; password: string; full_name: string }) => {

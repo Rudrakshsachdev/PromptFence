@@ -1,5 +1,7 @@
 'use client';
 
+import { RequirePermission } from '@/components/shared/require-permission';
+import { PERMISSIONS } from '@/constants/permissions';
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { LibraryBig, SearchX } from 'lucide-react';
@@ -11,7 +13,7 @@ import { useScenario, useUpdateScenario } from '@/hooks/use-scenarios';
 import { ApiError } from '@/lib/api-client';
 import { ScenarioForm } from '../../_components/scenario-form';
 
-export default function EditScenarioPage() {
+function EditScenarioPageContent() {
   const params = useParams();
   const scenarioId = params.scenarioId as string;
   const router = useRouter();
@@ -61,5 +63,13 @@ export default function EditScenarioPage() {
         }
       />
     </div>
+  );
+}
+
+export default function EditScenarioPage() {
+  return (
+    <RequirePermission permission={PERMISSIONS.scenariosWrite} backHref="/scenarios" backLabel="Back to scenarios">
+      <EditScenarioPageContent />
+    </RequirePermission>
   );
 }

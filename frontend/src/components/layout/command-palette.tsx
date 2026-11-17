@@ -18,7 +18,9 @@ import {
   Search,
   ShieldAlert,
 } from 'lucide-react';
-import { ALL_NAV_ITEMS } from '@/constants/navigation';
+import { ALL_NAV_ITEMS, RESEARCHER_NAV_ITEMS } from '@/constants/navigation';
+import { useAuth } from '@/hooks/use-auth';
+import { usesResearcherWorkspace } from '@/lib/roles';
 import { useDebounce } from '@/hooks/use-debounce';
 import { shortId } from '@/lib/format';
 import { getRunStatusMeta, getSeverityMeta } from '@/lib/status';
@@ -50,6 +52,8 @@ const ACTIONS: PaletteItem[] = [
 /** Global ⌘K / Ctrl+K palette: pages, actions, and live search across workspace entities. */
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const router = useRouter();
+  const { user } = useAuth();
+  const navItems = usesResearcherWorkspace(user) ? RESEARCHER_NAV_ITEMS : ALL_NAV_ITEMS;
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
@@ -99,7 +103,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     const match = (i: PaletteItem) =>
       !q || `${i.title} ${i.subtitle ?? ''} ${i.keywords ?? ''}`.toLowerCase().includes(q);
 
-    const pages: PaletteItem[] = ALL_NAV_ITEMS.map((n) => ({
+    const pages: PaletteItem[] = navItems.map((n) => ({
       id: `p-${n.href}`,
       group: 'Pages',
       title: n.title,
@@ -164,7 +168,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     }
     if (findingItems.length) grouped.set('Findings', findingItems);
     return Array.from(grouped.values()).flat();
-  }, [query, targets.data, suites.data, scenarios.data, runs.data, findings.data]);
+  }, [query, navItems, targets.data, suites.data, scenarios.data, runs.data, findings.data]);
 
   useEffect(() => setActiveIndex(0), [query]);
 

@@ -11,6 +11,7 @@ export interface FindingListParams extends Record<string, string | number | bool
   search?: string;
   sort?: string;
   test_run_id?: string;
+  target_id?: string;
 }
 
 export const findingService = {

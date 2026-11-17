@@ -1,5 +1,7 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-auth';
+import { PERMISSIONS } from '@/constants/permissions';
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -52,6 +54,7 @@ const PAGE_SIZE = 50;
 const RUN_SAMPLE = 100;
 
 export default function TargetsPage() {
+  const { can } = usePermissions();
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -198,29 +201,37 @@ export default function TargetsPage() {
                   <ExternalLink /> Open
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/targets/${t.id}/edit`}>
-                  <Pencil /> Edit configuration
-                </Link>
-              </DropdownMenuItem>
+              {can(PERMISSIONS.targetsWrite) && (
+                <DropdownMenuItem asChild>
+                  <Link href={`/targets/${t.id}/edit`}>
+                    <Pencil /> Edit configuration
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem asChild>
                 <Link href="/test-runs/new">
                   <Play /> Launch test run
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={toggleStatus.isPending}
-                onSelect={() => toggleStatus.mutate({ id: t.id, isActive: !t.is_active })}
-              >
-                <Power /> {t.is_active ? 'Disable' : 'Enable'}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => setTargetToDelete(t)}
-                className="text-critical focus:text-critical [&_svg]:text-critical"
-              >
-                <Trash2 /> Delete
-              </DropdownMenuItem>
+              {can(PERMISSIONS.targetsWrite) && (
+                <DropdownMenuItem
+                  disabled={toggleStatus.isPending}
+                  onSelect={() => toggleStatus.mutate({ id: t.id, isActive: !t.is_active })}
+                >
+                  <Power /> {t.is_active ? 'Disable' : 'Enable'}
+                </DropdownMenuItem>
+              )}
+              {can(PERMISSIONS.targetsDelete) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => setTargetToDelete(t)}
+                    className="text-critical focus:text-critical [&_svg]:text-critical"
+                  >
+                    <Trash2 /> Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -237,11 +248,13 @@ export default function TargetsPage() {
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
           <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? 'animate-spin' : ''}`} /> Refresh
         </Button>
-        <Button asChild size="sm">
-          <Link href="/targets/new">
-            <Plus className="h-3.5 w-3.5" /> Register target
-          </Link>
-        </Button>
+        {can(PERMISSIONS.targetsWrite) && (
+          <Button asChild size="sm">
+            <Link href="/targets/new">
+              <Plus className="h-3.5 w-3.5" /> Register target
+            </Link>
+          </Button>
+        )}
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -336,8 +349,8 @@ export default function TargetsPage() {
                 icon={Crosshair}
                 title="No targets registered"
                 description="Register an LLM, agent or HTTP endpoint to start running adversarial scenarios against it."
-                actionText="Register target"
-                actionHref="/targets/new"
+                actionText={can(PERMISSIONS.targetsWrite) ? 'Register target' : undefined}
+                actionHref={can(PERMISSIONS.targetsWrite) ? '/targets/new' : undefined}
               />
             )
           }

@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.dependencies.auth import get_current_user
 from app.dependencies.database import get_db
 from app.models.user import User
+from app.permissions.roles import PermissionType, RoleType
 from app.repositories.role_repository import RoleRepository
 from app.schemas.auth import (
     ForgotPasswordRequest,
@@ -171,10 +172,13 @@ async def get_me(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Return currently authenticated user's profile and roles."""
-    role_repo = RoleRepository(db)
-    user_roles = await role_repo.get_user_roles(current_user.id)
-    roles_list = [ur.role.name for ur in user_roles if ur.role]
+    """Return the authenticated user's profile, roles and effective permissions."""
+    role_names, permissions = await RoleRepository(db).get_role_and_permission_names(
+        current_user.id
+    )
+    if RoleType.ADMIN.value in role_names:
+        # Mirrors the admin bypass in require_role/require_permission.
+        permissions |= {p.value for p in PermissionType}
 
     return UserResponse(
         id=current_user.id,
@@ -186,6 +190,7 @@ async def get_me(
         created_at=current_user.created_at,
         updated_at=current_user.updated_at,
         last_login_at=current_user.last_login_at,
-        roles=roles_list,
+        roles=sorted(role_names),
+        permissions=sorted(permissions),
     )
 

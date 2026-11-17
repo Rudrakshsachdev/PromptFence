@@ -11,7 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies.auth import get_current_user
 from app.dependencies.database import get_db
 from app.dependencies.pagination import PaginationParams, get_pagination_params
+from app.dependencies.permissions import require_permission
 from app.models.user import User
+from app.permissions.roles import PermissionType
 from app.repositories.role_repository import RoleRepository
 from app.schemas.common import SuccessResponse
 from app.schemas.target import (
@@ -34,7 +36,11 @@ async def _get_user_roles(user: User, db: AsyncSession) -> list[str]:
     return [r.role.name for r in roles if r.role]
 
 
-@router.get("", response_model=TargetListResponse)
+@router.get(
+    "",
+    response_model=TargetListResponse,
+    dependencies=[Depends(require_permission(PermissionType.TARGETS_READ))],
+)
 async def list_targets(
     pagination: Annotated[PaginationParams, Depends(get_pagination_params)],
     current_user: Annotated[User, Depends(get_current_user)],
@@ -57,7 +63,12 @@ async def list_targets(
     )
 
 
-@router.post("", response_model=TargetResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=TargetResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission(PermissionType.TARGETS_WRITE))],
+)
 async def create_target(
     data: TargetCreate,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -69,7 +80,11 @@ async def create_target(
     return TargetResponse.model_validate(target)
 
 
-@router.get("/{target_id}", response_model=TargetResponse)
+@router.get(
+    "/{target_id}",
+    response_model=TargetResponse,
+    dependencies=[Depends(require_permission(PermissionType.TARGETS_READ))],
+)
 async def get_target(
     target_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -82,7 +97,11 @@ async def get_target(
     return TargetResponse.model_validate(target)
 
 
-@router.patch("/{target_id}", response_model=TargetResponse)
+@router.patch(
+    "/{target_id}",
+    response_model=TargetResponse,
+    dependencies=[Depends(require_permission(PermissionType.TARGETS_WRITE))],
+)
 async def update_target(
     target_id: uuid.UUID,
     data: TargetUpdate,
@@ -98,7 +117,11 @@ async def update_target(
     return TargetResponse.model_validate(target)
 
 
-@router.delete("/{target_id}", response_model=SuccessResponse)
+@router.delete(
+    "/{target_id}",
+    response_model=SuccessResponse,
+    dependencies=[Depends(require_permission(PermissionType.TARGETS_DELETE))],
+)
 async def delete_target(
     target_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -111,7 +134,11 @@ async def delete_target(
     return SuccessResponse(message="Target deleted successfully")
 
 
-@router.post("/{target_id}/validate", response_model=TargetValidationResponse)
+@router.post(
+    "/{target_id}/validate",
+    response_model=TargetValidationResponse,
+    dependencies=[Depends(require_permission(PermissionType.TARGETS_VALIDATE))],
+)
 async def validate_target_connectivity(
     target_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -124,7 +151,10 @@ async def validate_target_connectivity(
     return TargetValidationResponse(**result)
 
 
-@router.post("/{target_id}/health-check")
+@router.post(
+    "/{target_id}/health-check",
+    dependencies=[Depends(require_permission(PermissionType.TARGETS_VALIDATE))],
+)
 async def health_check_target(
     target_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -144,7 +174,11 @@ async def health_check_target(
     }
 
 
-@router.get("/{target_id}/versions", response_model=list[TargetVersionResponse])
+@router.get(
+    "/{target_id}/versions",
+    response_model=list[TargetVersionResponse],
+    dependencies=[Depends(require_permission(PermissionType.TARGETS_READ))],
+)
 async def list_target_versions(
     target_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -157,7 +191,11 @@ async def list_target_versions(
     return [TargetVersionResponse.model_validate(v) for v in versions]
 
 
-@router.patch("/{target_id}/status", response_model=TargetResponse)
+@router.patch(
+    "/{target_id}/status",
+    response_model=TargetResponse,
+    dependencies=[Depends(require_permission(PermissionType.TARGETS_WRITE))],
+)
 async def update_target_status(
     target_id: uuid.UUID,
     data: TargetStatusUpdate,

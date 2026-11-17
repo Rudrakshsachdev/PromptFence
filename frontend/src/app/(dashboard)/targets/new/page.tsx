@@ -1,5 +1,7 @@
 'use client';
 
+import { RequirePermission } from '@/components/shared/require-permission';
+import { PERMISSIONS } from '@/constants/permissions';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Crosshair } from 'lucide-react';
@@ -7,7 +9,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { useCreateTarget } from '@/hooks/use-targets';
 import { TargetForm, type TargetFormPayload } from '../_components/target-form';
 
-export default function NewTargetPage() {
+function NewTargetPageContent() {
   const router = useRouter();
   const createMutation = useCreateTarget();
 
@@ -43,5 +45,13 @@ export default function NewTargetPage() {
         onSubmit={handleSubmit}
       />
     </div>
+  );
+}
+
+export default function NewTargetPage() {
+  return (
+    <RequirePermission permission={PERMISSIONS.targetsWrite} backHref="/targets" backLabel="Back to targets">
+      <NewTargetPageContent />
+    </RequirePermission>
   );
 }

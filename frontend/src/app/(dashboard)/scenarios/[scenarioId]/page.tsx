@@ -1,5 +1,7 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-auth';
+import { PERMISSIONS } from '@/constants/permissions';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -28,6 +30,7 @@ import { formatRelativeTime } from '@/lib/utils';
 const TEMPLATE_VARIABLES = ['{canary}', '{canary_token}', '{canary_preview}', '{source_id}'];
 
 export default function ScenarioDetailPage() {
+  const { can } = usePermissions();
   const params = useParams();
   const scenarioId = params.scenarioId as string;
   const router = useRouter();
@@ -86,20 +89,24 @@ export default function ScenarioDetailPage() {
         <label className="flex h-8 items-center gap-2 rounded-md border border-border bg-card px-2.5 text-xs text-muted-foreground">
           <Switch
             checked={scenario.is_enabled}
-            disabled={statusMutation.isPending}
+            disabled={statusMutation.isPending || !can(PERMISSIONS.scenariosWrite)}
             onCheckedChange={(checked) => statusMutation.mutate(checked)}
             aria-label={scenario.is_enabled ? 'Disable scenario' : 'Enable scenario'}
           />
           {scenario.is_enabled ? 'Enabled' : 'Disabled'}
         </label>
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/scenarios/${scenarioId}/edit`}>
-            <Pencil className="h-3.5 w-3.5" /> Edit
-          </Link>
-        </Button>
-        <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
-          <Trash2 className="h-3.5 w-3.5" /> Delete
-        </Button>
+        {can(PERMISSIONS.scenariosWrite) && (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/scenarios/${scenarioId}/edit`}>
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </Link>
+          </Button>
+        )}
+        {can(PERMISSIONS.scenariosDelete) && (
+          <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+            <Trash2 className="h-3.5 w-3.5" /> Delete
+          </Button>
+        )}
       </PageHeader>
 
       <div className="grid gap-4 lg:grid-cols-3">

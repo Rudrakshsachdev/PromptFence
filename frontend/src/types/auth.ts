@@ -9,6 +9,8 @@ export interface User {
   updated_at: string;
   last_login_at?: string | null;
   roles: string[];
+  /** Effective permissions from the user's roles (returned by /auth/me). */
+  permissions?: string[];
 }
 
 export interface Session {

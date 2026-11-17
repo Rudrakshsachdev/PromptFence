@@ -86,6 +86,10 @@ class Settings(BaseSettings):
     # long (stale connections come from idle timeouts / compute suspension).
     # A ping on every checkout costs BEGIN + ";" + ROLLBACK round trips.
     DB_PING_IF_IDLE_SECONDS: float = 30.0
+    # Upper bound for opening a new connection (asyncpg defaults to 60s). A
+    # normal remote handshake takes a few seconds; a stalled one should fail
+    # fast rather than hold a request for a minute.
+    DB_CONNECT_TIMEOUT_SECONDS: float = 15.0
 
     # CORS: browser origins allowed to call the API. Requests carry auth cookies
     # (credentials), so only explicit origins are accepted, never "*".
