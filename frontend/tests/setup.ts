@@ -23,3 +23,12 @@ vi.mock('sonner', () => ({
   },
 }));
 
+
+// jsdom has no ResizeObserver; Recharts' ResponsiveContainer requires one.
+if (!('ResizeObserver' in globalThis)) {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}

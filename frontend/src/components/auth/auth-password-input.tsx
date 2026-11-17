@@ -89,20 +89,23 @@ export const AuthPasswordInput = React.forwardRef<HTMLInputElement, AuthPassword
               className
             )}
             aria-invalid={!!error}
+            aria-required={required || undefined}
             aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
             {...restProps}
           />
           <button
             type="button"
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex h-7 w-7 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 active:scale-95"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex h-7 w-7 items-center justify-center rounded-md text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
             onClick={handleToggle}
             onMouseDown={(e) => {
-              // Prevent input blur so focus remains active across desktop & mobile
+              // Keep focus (and the caret position) in the input on pointer toggles
               e.preventDefault();
             }}
-            aria-label={showPassword ? 'Hide value' : 'Show value'}
-            title={showPassword ? 'Hide value' : 'Show value'}
-            tabIndex={-1}
+            // Toggle-button pattern: a stable name, with state exposed via aria-pressed
+            aria-label="Show password"
+            aria-pressed={showPassword}
+            aria-controls={id}
+            disabled={restProps.disabled}
           >
             {showPassword ? (
               <EyeOff className="h-4 w-4 pointer-events-none" aria-hidden="true" />

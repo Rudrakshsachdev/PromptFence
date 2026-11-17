@@ -10,7 +10,7 @@ export interface TooltipRow {
 /** Tooltip card used by every chart. Text uses ink tokens; colour lives in the swatch. */
 export function ChartTooltipCard({ title, rows }: { title?: React.ReactNode; rows: TooltipRow[] }) {
   return (
-    <div className="min-w-[160px] rounded-md border border-border bg-popover px-3 py-2 text-xs shadow-overlay">
+    <div className="min-w-[160px] rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-overlay">
       {title && <p className="mb-1.5 font-medium text-foreground">{title}</p>}
       <ul className="space-y-1">
         {rows.map((r) => (
@@ -81,7 +81,7 @@ export function ChartEmpty({
 }) {
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-md border border-dashed border-border bg-background/40 text-center"
+      className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface/40 text-center"
       style={{ height }}
     >
       <p className="text-xs font-medium text-muted-foreground">{message}</p>

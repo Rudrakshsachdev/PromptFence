@@ -1,57 +1,60 @@
 /**
  * Chart theme. SVG fills cannot read Tailwind classes, so chart colours are hex.
  *
- * SERIES is a categorical palette validated (lightness band, chroma floor,
- * adjacent-pair CVD separation, normal-vision floor, ≥3:1 contrast) against the
- * card surface #111B2D. Assign in fixed order by entity, never by rank, and never
- * cycle: past 8 series fold into "Other". Status/severity colours are reserved
- * for state and are not used as series colours.
+ * SERIES is the light-surface step of the validated categorical palette (same
+ * eight hues as before, re-stepped for the white card surface). Validated with
+ * the dataviz palette checker against #FFFFFF: lightness band, chroma floor,
+ * adjacent CVD separation (worst 9.1) and normal-vision floor (worst 19.6) pass.
+ * Slots 3–5 (aqua, yellow, magenta) are below 3:1 contrast on white, so any
+ * chart using them must also show values as text (legend values or labels).
+ * Assign in fixed order by entity, never by rank, and never cycle: past 8
+ * series fold into "Other". Status/severity colours are reserved for state.
  */
 export const SERIES = [
-  '#3987E5', // blue
-  '#D95926', // orange
-  '#199E70', // aqua
-  '#C98500', // yellow
-  '#D55181', // magenta
-  '#0CA30C', // green
-  '#9085E9', // violet
-  '#E66767', // red
+  '#2A78D6', // blue
+  '#EB6834', // orange
+  '#1BAF7A', // aqua
+  '#EDA100', // yellow
+  '#E87BA4', // magenta
+  '#008300', // green
+  '#6250D6', // violet
+  '#E34948', // red
 ] as const;
 
 export const CHART = {
-  surface: '#111B2D',
-  grid: '#263449',
-  axis: '#64748B',
-  tick: '#94A3B8',
-  text: '#F1F5F9',
-  cursor: '#334155',
-  primary: '#818CF8',
-  info: '#22D3EE',
-  success: '#34D399',
-  warning: '#FBBF24',
-  critical: '#F87171',
-  neutral: '#64748B',
+  surface: '#FFFFFF',
+  grid: '#EDEDED',
+  axis: '#D4D4D4',
+  tick: '#737373',
+  text: '#0A0A0A',
+  cursor: '#D4D4D4',
+  primary: '#171717',
+  info: '#0E7490',
+  success: '#047857',
+  warning: '#B45309',
+  critical: '#DC2626',
+  neutral: '#737373',
 } as const;
 
-/** Hex equivalents of the semantic tones in `@/lib/status`, for chart fills. */
+/** Hex equivalents of the semantic tones in `@/lib/status` (same values as the CSS tokens). */
 export const TONE_HEX = {
-  neutral: '#64748B',
-  accent: '#818CF8',
-  info: '#22D3EE',
-  success: '#34D399',
-  warning: '#FBBF24',
-  high: '#FB923C',
-  critical: '#F87171',
-  low: '#60A5FA',
+  neutral: '#737373',
+  accent: '#171717',
+  info: '#0E7490',
+  success: '#047857',
+  warning: '#B45309',
+  high: '#C2410C',
+  critical: '#DC2626',
+  low: '#2563EB',
 } as const;
 
-export const AXIS_TICK ={ fill: CHART.tick, fontSize: 11 } as const;
+export const AXIS_TICK = { fill: CHART.tick, fontSize: 11 } as const;
 
 /** Shared props for recessive axes. */
 export const xAxisProps = {
   tick: AXIS_TICK,
   tickLine: false,
-  axisLine: { stroke: CHART.grid },
+  axisLine: { stroke: CHART.axis },
   tickMargin: 8,
   minTickGap: 24,
 } as const;

@@ -44,11 +44,11 @@ export function NotificationsMenu() {
         <button
           type="button"
           aria-label={count ? `Notifications: ${count} items` : 'Notifications'}
-          className="relative flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+          className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           <Bell className="h-4 w-4" />
           {count > 0 && (
-            <span className="absolute right-1 top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-critical px-1 font-mono text-[9px] font-semibold leading-none text-background">
+            <span className="absolute right-1.5 top-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-critical px-1 font-mono text-[9px] font-semibold leading-none text-background">
               {count > 9 ? '9+' : count}
             </span>
           )}

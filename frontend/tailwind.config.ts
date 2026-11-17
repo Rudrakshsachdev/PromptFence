@@ -83,9 +83,22 @@ const config: Config = {
       fontSize: {
         '2xs': ['0.6875rem', { lineHeight: '1rem' }],
       },
+      // Scale steps used by the auth and landing surfaces that Tailwind 3 does
+      // not ship (they mirror the Tailwind 4 defaults). Without them the
+      // classes compile to nothing and controls lose their height/elevation.
+      spacing: {
+        '10.5': '2.625rem',
+      },
+      backdropBlur: {
+        xs: '4px',
+      },
       boxShadow: {
-        panel: '0 1px 0 0 hsl(0 0% 100% / 0.03) inset, 0 1px 2px 0 rgb(0 0 0 / 0.35)',
-        overlay: '0 16px 48px -12px rgb(0 0 0 / 0.6), 0 0 0 1px hsl(var(--border))',
+        '2xs': '0 1px 0 0 rgb(0 0 0 / 0.05)',
+        xs: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+        // Light-surface elevation, matching the landing page's restrained cards.
+        panel: '0 1px 2px 0 rgb(0 0 0 / 0.04)',
+        'panel-hover': '0 6px 20px -8px rgb(0 0 0 / 0.12), 0 1px 2px 0 rgb(0 0 0 / 0.04)',
+        overlay: '0 16px 48px -12px rgb(0 0 0 / 0.18), 0 0 0 1px hsl(var(--border))',
       },
       keyframes: {
         'accordion-down': {

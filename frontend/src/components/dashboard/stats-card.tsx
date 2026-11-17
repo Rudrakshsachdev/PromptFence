@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { LucideIcon } from 'lucide-react';
+import { Sparkline } from '@/components/charts/sparkline';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TONE_CLASSES, type Tone } from '@/lib/status';
 import { cn } from '@/lib/utils';
@@ -19,10 +20,12 @@ interface StatsCardProps {
   isLoading?: boolean;
   /** Renders "Not measured" instead of the value. */
   unavailable?: boolean;
+  /** Real per-period values (e.g. daily counts) drawn as a trend line under the value. */
+  sparkline?: { values: number[]; color: string; summary: string };
   className?: string;
 }
 
-/** KPI tile: label, headline value, one line of context. */
+/** KPI tile: label, headline value, one line of context, optional trend line. */
 export function StatsCard({
   title,
   value,
@@ -33,43 +36,67 @@ export function StatsCard({
   href,
   isLoading = false,
   unavailable = false,
+  sparkline,
   className,
 }: StatsCardProps) {
   const t = tone ? TONE_CLASSES[tone] : null;
+  const isZero = value === 0 || value === '0';
   const body = (
-    <div className="flex h-full flex-col gap-2 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="eyebrow truncate">{title}</span>
-        <Icon className={cn('h-4 w-4 shrink-0', t ? t.text : 'text-subtle-foreground')} aria-hidden />
-      </div>
-      {isLoading ? (
-        <Skeleton className="h-7 w-16" />
-      ) : unavailable ? (
-        <span className="text-sm font-medium italic text-subtle-foreground">Not measured</span>
-      ) : (
-        <div className="flex items-baseline gap-2">
-          <span
-            className={cn(
-              'text-2xl font-semibold tabular-nums tracking-tight',
-              t && value !== 0 && value !== '0' ? t.text : 'text-foreground',
-            )}
-          >
-            {value}
-          </span>
-          {trend && (
-            <span className="rounded border border-border bg-surface px-1.5 py-px text-[10px] font-medium text-muted-foreground">
-              {trend}
-            </span>
+    <div className="flex h-full flex-col p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <span className="truncate pt-1 text-[13px] font-medium text-muted-foreground">{title}</span>
+        <span
+          className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-colors',
+            t && !isZero ? cn('border-transparent', t.soft, t.text) : 'border-border bg-surface text-muted-foreground',
           )}
-        </div>
+        >
+          <Icon className="h-4 w-4" aria-hidden />
+        </span>
+      </div>
+
+      <div className="mt-2">
+        {isLoading ? (
+          <Skeleton className="h-8 w-20" />
+        ) : unavailable ? (
+          <span className="text-sm font-medium italic text-subtle-foreground">Not measured</span>
+        ) : (
+          <div className="flex items-baseline gap-2">
+            <span
+              className={cn(
+                'text-[28px] font-semibold leading-8 tracking-tight tabular-nums',
+                t && !isZero ? t.text : 'text-foreground',
+              )}
+            >
+              {value}
+            </span>
+            {trend && (
+              <span className="rounded-md border border-border bg-surface px-1.5 py-px text-[10px] font-medium text-muted-foreground">
+                {trend}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {subtitle && <p className="mt-1 truncate text-xs text-subtle-foreground">{subtitle}</p>}
+
+      {sparkline && !isLoading && (
+        <Sparkline
+          className="mt-auto pt-3"
+          height={36}
+          values={sparkline.values}
+          color={sparkline.color}
+          summary={sparkline.summary}
+        />
       )}
-      {subtitle && <p className="truncate text-xs text-muted-foreground">{subtitle}</p>}
     </div>
   );
 
   const classes = cn(
-    'group relative block min-w-0 overflow-hidden rounded-lg border border-border bg-card shadow-panel transition-colors',
-    href && 'hover:border-border-strong hover:bg-surface/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
+    'group relative block min-w-0 overflow-hidden rounded-xl border border-border bg-card shadow-panel transition-[border-color,box-shadow,transform] duration-200',
+    href &&
+      'hover:-translate-y-px hover:border-border-strong hover:shadow-panel-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0',
     className,
   );
 

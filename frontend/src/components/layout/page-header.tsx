@@ -44,17 +44,17 @@ export function PageHeader({
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           {Icon && (
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-primary">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-foreground shadow-panel">
               <Icon className="h-[18px] w-[18px]" aria-hidden />
             </div>
           )}
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="break-words text-xl font-semibold tracking-tight text-foreground">{title}</h1>
+              <h1 className="break-words text-[22px] font-semibold leading-tight tracking-tight text-foreground sm:text-2xl">{title}</h1>
               {badge}
             </div>
             {description && (
-              <p className="max-w-3xl text-[13px] leading-relaxed text-muted-foreground">{description}</p>
+              <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">{description}</p>
             )}
             {meta && (
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-xs text-muted-foreground">

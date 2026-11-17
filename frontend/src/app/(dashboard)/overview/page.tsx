@@ -43,7 +43,7 @@ import { useDashboardActivity, useDashboardOverview } from '@/hooks/use-dashboar
 import { useFindings } from '@/hooks/use-findings';
 import { useComparisons } from '@/hooks/use-regression';
 import { useTestRuns } from '@/hooks/use-test-runs';
-import { durationBetween, formatDuration, formatNumber, formatPercent, formatRatio } from '@/lib/format';
+import { durationBetween, formatDuration, formatNumber, formatPercent } from '@/lib/format';
 import {
   getCategoryLabel,
   getSeverityMeta,
@@ -236,7 +236,7 @@ export default function OverviewPage() {
       align: 'right',
       hideBelow: 'md',
       sortValue: (t) => t.canary_exposure_rate,
-      cell: (t) => <span className="font-mono text-xs tabular-nums">{formatRatio(t.canary_exposure_rate)}</span>,
+      cell: (t) => <span className="font-mono text-xs tabular-nums">{formatPercent(t.canary_exposure_rate)}</span>,
     },
     {
       id: 'tool',
@@ -244,7 +244,7 @@ export default function OverviewPage() {
       align: 'right',
       hideBelow: 'lg',
       sortValue: (t) => t.tool_violation_rate,
-      cell: (t) => <span className="font-mono text-xs tabular-nums">{formatRatio(t.tool_violation_rate)}</span>,
+      cell: (t) => <span className="font-mono text-xs tabular-nums">{formatPercent(t.tool_violation_rate)}</span>,
     },
     {
       id: 'runs',
@@ -275,8 +275,21 @@ export default function OverviewPage() {
 
   const isEmptyWorkspace = dashboard.data && dashboard.data.total_targets === 0;
 
+  // Daily series from the trends API, drawn as sparklines on the KPI cards.
+  const trendPoints = trends.data?.points ?? [];
+  const sparkline = (key: TrendKey, color: string, noun: string) => {
+    if (trendPoints.length < 2) return undefined;
+    const values = trendPoints.map((p) => p[key] ?? 0);
+    const total = values.reduce((sum, v) => sum + v, 0);
+    return {
+      values,
+      color,
+      summary: `${formatNumber(total)} ${noun} over the last ${days} days · peak ${formatNumber(Math.max(...values))} in a day`,
+    };
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <PageHeader
         title="Security overview"
         description="Posture, execution activity and open risk across every registered target."
@@ -309,365 +322,408 @@ export default function OverviewPage() {
       )}
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <StatsCard
-          title="Targets"
-          value={formatNumber(dashboard.data?.total_targets)}
-          subtitle={`${formatNumber(dashboard.data?.active_targets ?? 0)} active`}
-          icon={Crosshair}
-          href="/targets"
-          isLoading={dashboard.isLoading}
-        />
-        <StatsCard
-          title="Test executions"
-          value={formatNumber(a?.total_test_runs)}
-          subtitle={`${formatNumber(a?.total_cases_executed ?? 0)} cases · ${days}d`}
-          icon={Activity}
-          href="/test-runs"
-          isLoading={analytics.isLoading}
-        />
-        <StatsCard
-          title="Vulnerabilities"
-          value={formatNumber(a?.total_findings)}
-          subtitle={`${formatNumber(a?.high_findings ?? 0)} high severity`}
-          icon={ShieldAlert}
-          href="/findings"
-          isLoading={analytics.isLoading}
-        />
-        <StatsCard
-          title="Critical findings"
-          value={formatNumber(a?.critical_findings)}
-          subtitle={`${formatNumber(criticalFindings.data?.total ?? 0)} open, untriaged`}
-          icon={Siren}
-          tone="critical"
-          href="/findings?severity=CRITICAL&status=OPEN"
-          isLoading={analytics.isLoading}
-        />
-        <StatsCard
-          title="Canary exposures"
-          value={formatNumber(a?.canary_exposure_rate.numerator)}
-          subtitle={a ? `${formatPercent(a.canary_exposure_rate.percentage)} of ${formatNumber(a.canary_exposure_rate.denominator)} canaries` : undefined}
-          icon={Fingerprint}
-          tone="critical"
-          href="/provenance"
-          isLoading={analytics.isLoading}
-        />
-        <StatsCard
-          title="Regression failures"
-          value={formatNumber(regressionFailures)}
-          subtitle={`of ${formatNumber(regressions.data?.length ?? 0)} comparisons`}
-          icon={GitCompareArrows}
-          tone="warning"
-          href="/regression"
-          isLoading={regressions.isLoading}
-        />
-      </div>
-
-      {analytics.isError && <ErrorState error={analytics.error} onRetry={() => analytics.refetch()} compact />}
+      <section aria-labelledby="overview-kpis" className="space-y-4">
+        <h2 id="overview-kpis" className="sr-only">
+          Key metrics
+        </h2>
+        <div className="grid grid-cols-1 gap-4 min-[420px]:grid-cols-2 md:grid-cols-3 2xl:grid-cols-6">
+          <StatsCard
+            title="Targets"
+            value={formatNumber(dashboard.data?.total_targets)}
+            subtitle={`${formatNumber(dashboard.data?.active_targets ?? 0)} active`}
+            icon={Crosshair}
+            href="/targets"
+            isLoading={dashboard.isLoading}
+          />
+          <StatsCard
+            title="Test executions"
+            value={formatNumber(a?.total_test_runs)}
+            subtitle={`${formatNumber(a?.total_cases_executed ?? 0)} cases · ${days}d`}
+            icon={Activity}
+            href="/test-runs"
+            isLoading={analytics.isLoading}
+            sparkline={sparkline('runs_count', SERIES[0], 'test runs')}
+          />
+          <StatsCard
+            title="Vulnerabilities"
+            value={formatNumber(a?.total_findings)}
+            subtitle={`${formatNumber(a?.high_findings ?? 0)} high severity`}
+            icon={ShieldAlert}
+            href="/findings"
+            isLoading={analytics.isLoading}
+            sparkline={sparkline('findings_count', SERIES[1], 'findings')}
+          />
+          <StatsCard
+            title="Critical findings"
+            value={formatNumber(a?.critical_findings)}
+            subtitle={`${formatNumber(criticalFindings.data?.total ?? 0)} open, untriaged`}
+            icon={Siren}
+            tone="critical"
+            href="/findings?severity=CRITICAL&status=OPEN"
+            isLoading={analytics.isLoading}
+          />
+          <StatsCard
+            title="Canary exposures"
+            value={formatNumber(a?.canary_exposure_rate.numerator)}
+            subtitle={a ? `${formatPercent(a.canary_exposure_rate.percentage)} of ${formatNumber(a.canary_exposure_rate.denominator)} canaries` : undefined}
+            icon={Fingerprint}
+            tone="critical"
+            href="/provenance"
+            isLoading={analytics.isLoading}
+            sparkline={sparkline('canary_exposures', SERIES[4], 'canary exposures')}
+          />
+          <StatsCard
+            title="Regression failures"
+            value={formatNumber(regressionFailures)}
+            subtitle={`of ${formatNumber(regressions.data?.length ?? 0)} comparisons`}
+            icon={GitCompareArrows}
+            tone="warning"
+            href="/regression"
+            isLoading={regressions.isLoading}
+          />
+        </div>
+        {analytics.isError && <ErrorState error={analytics.error} onRetry={() => analytics.refetch()} compact />}
+      </section>
 
       {/* Posture + trend */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Panel
-          title="Security posture"
-          description={a ? `Formula ${a.security_score.formula_version} · last ${days} days` : 'Weighted, deterministic score'}
-          icon={ShieldCheck}
-          actions={
-            <Link href="/analytics" className="text-xs font-medium text-muted-foreground hover:text-foreground">
-              Details
-            </Link>
-          }
-        >
-          {analytics.isLoading ? (
-            <Skeleton className="h-[260px] w-full" />
-          ) : (
-            <div className="flex flex-col gap-5">
-              <div className="flex items-center gap-5">
-                <ScoreDial
-                  score={hasScore ? a?.security_score.score : null}
-                  grade={a?.security_score.grade}
-                  size={116}
-                />
-                <div className="min-w-0 space-y-2 text-xs">
-                  <p className="text-muted-foreground">
-                    Coverage{' '}
-                    <span className="font-mono text-foreground">
-                      {formatPercent(a?.security_score.coverage_pct, 0)}
-                    </span>
-                  </p>
-                  <p className="text-muted-foreground">
-                    Eligible cases{' '}
-                    <span className="font-mono text-foreground">
-                      {formatNumber(a?.security_score.total_eligible_cases)}
-                    </span>
-                  </p>
-                  <p className="text-muted-foreground">
-                    Canaries monitored{' '}
-                    <span className="font-mono text-foreground">
-                      {formatNumber(a?.active_canaries_monitored)}
-                    </span>
-                  </p>
-                  {!hasScore && (
-                    <p className="text-subtle-foreground">Run a suite to compute a score.</p>
-                  )}
+      <DashboardSection id="overview-posture" title="Security posture">
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Panel
+            headingLevel="h3"
+            title="Posture score"
+            description={a ? `Formula ${a.security_score.formula_version} · last ${days} days` : 'Weighted, deterministic score'}
+            icon={ShieldCheck}
+            actions={<PanelLink href="/analytics">Details</PanelLink>}
+          >
+            {analytics.isLoading ? (
+              <Skeleton className="h-[260px] w-full" />
+            ) : (
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-5">
+                  <ScoreDial
+                    score={hasScore ? a?.security_score.score : null}
+                    grade={a?.security_score.grade}
+                    size={116}
+                  />
+                  <dl className="min-w-0 flex-1 space-y-2.5 text-xs">
+                    <PostureFact label="Coverage" value={formatPercent(a?.security_score.coverage_pct, 0)} />
+                    <PostureFact label="Eligible cases" value={formatNumber(a?.security_score.total_eligible_cases)} />
+                    <PostureFact label="Canaries monitored" value={formatNumber(a?.active_canaries_monitored)} />
+                    {!hasScore && <p className="pt-1 text-subtle-foreground">Run a suite to compute a score.</p>}
+                  </dl>
+                </div>
+                <div className="space-y-3.5 border-t border-border pt-5">
+                  <Meter
+                    label="Canary exposure rate"
+                    value={a && a.canary_exposure_rate.denominator > 0 ? a.canary_exposure_rate.percentage : null}
+                    tone="critical"
+                    hint={a?.canary_exposure_rate.definition}
+                  />
+                  <Meter
+                    label="Tool boundary violation rate"
+                    value={a && a.tool_violation_rate.denominator > 0 ? a.tool_violation_rate.percentage : null}
+                    tone="high"
+                  />
+                  <Meter
+                    label="Benign test pass rate"
+                    value={a && a.benign_pass_rate.denominator > 0 ? a.benign_pass_rate.percentage : null}
+                    tone="success"
+                  />
+                  <Meter
+                    label="False-positive rate"
+                    value={a && a.false_positive_rate.denominator > 0 ? a.false_positive_rate.percentage : null}
+                    tone="neutral"
+                  />
                 </div>
               </div>
-              <div className="space-y-3">
-                <Meter
-                  label="Canary exposure rate"
-                  value={a && a.canary_exposure_rate.denominator > 0 ? a.canary_exposure_rate.percentage : null}
-                  tone="critical"
-                  hint={a?.canary_exposure_rate.definition}
+            )}
+          </Panel>
+
+          <Panel
+            headingLevel="h3"
+            className="lg:col-span-2"
+            title="Execution & findings trend"
+            description={`Daily counts · last ${days} days`}
+            icon={Activity}
+          >
+            {trends.isLoading ? (
+              <Skeleton className="h-[280px] w-full" />
+            ) : trends.isError ? (
+              <ErrorState error={trends.error} onRetry={() => trends.refetch()} compact />
+            ) : (
+              <TrendChart
+                data={trendPoints}
+                xKey="date"
+                height={280}
+                series={[
+                  { key: 'runs_count', label: 'Test runs', color: SERIES[0] },
+                  { key: 'findings_count', label: 'Findings', color: SERIES[1] },
+                ]}
+                emptyMessage="No executions in this period"
+                emptyHint="Launch a test run to start building history."
+              />
+            )}
+          </Panel>
+        </div>
+      </DashboardSection>
+
+      {/* Findings + exposure */}
+      <DashboardSection id="overview-findings" title="Findings & exposure">
+        <div className="grid gap-4 xl:grid-cols-3 xl:items-start">
+          <div className="grid gap-4 md:grid-cols-2 xl:col-span-2">
+            <Panel headingLevel="h3" title="Findings by severity" description={`Last ${days} days`}>
+              {distribution.isLoading ? (
+                <Skeleton className="h-[180px] w-full" />
+              ) : distribution.isError ? (
+                <ErrorState error={distribution.error} onRetry={() => distribution.refetch()} compact />
+              ) : (
+                <BarList items={severityItems} emptyMessage="No findings recorded" />
+              )}
+            </Panel>
+            <Panel headingLevel="h3" title="Vulnerability categories" description={`Last ${days} days`}>
+              {distribution.isLoading ? (
+                <Skeleton className="h-[180px] w-full" />
+              ) : distribution.isError ? (
+                <ErrorState error={distribution.error} onRetry={() => distribution.refetch()} compact />
+              ) : (
+                <BarList items={categoryItems} emptyMessage="No findings recorded" />
+              )}
+            </Panel>
+            <Panel
+              headingLevel="h3"
+              className="md:col-span-2"
+              title="Successful attack outcomes"
+              description="Daily canary exposures and unauthorized tool calls observed in target output"
+              icon={Fingerprint}
+            >
+              {trends.isLoading ? (
+                <Skeleton className="h-[240px] w-full" />
+              ) : trends.isError ? (
+                <ErrorState error={trends.error} onRetry={() => trends.refetch()} compact />
+              ) : (
+                <ColumnChart
+                  data={trendPoints}
+                  xKey="date"
+                  height={220}
+                  legendTotals
+                  series={[
+                    { key: 'canary_exposures', label: 'Canary exposures', color: SERIES[4] },
+                    { key: 'tool_violations', label: 'Tool violations', color: SERIES[3] },
+                  ]}
+                  emptyMessage="No attack outcomes in this period"
                 />
-                <Meter
-                  label="Tool boundary violation rate"
-                  value={a && a.tool_violation_rate.denominator > 0 ? a.tool_violation_rate.percentage : null}
-                  tone="high"
-                />
-                <Meter
-                  label="Benign test pass rate"
-                  value={a && a.benign_pass_rate.denominator > 0 ? a.benign_pass_rate.percentage : null}
-                  tone="success"
-                />
-                <Meter
-                  label="False-positive rate"
-                  value={a && a.false_positive_rate.denominator > 0 ? a.false_positive_rate.percentage : null}
-                  tone="neutral"
-                />
+              )}
+            </Panel>
+          </div>
+
+          <Panel
+            headingLevel="h3"
+            className="xl:col-span-1"
+            title="Open critical findings"
+            icon={Siren}
+            flush
+            actions={
+              <PanelLink href="/findings?severity=CRITICAL&status=OPEN" arrow>
+                View all
+              </PanelLink>
+            }
+          >
+            {criticalFindings.isLoading ? (
+              <div className="space-y-3 p-5">
+                {[0, 1, 2].map((i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
               </div>
-            </div>
-          )}
-        </Panel>
+            ) : criticalFindings.isError ? (
+              <div className="p-5">
+                <ErrorState error={criticalFindings.error} onRetry={() => criticalFindings.refetch()} compact />
+              </div>
+            ) : !criticalFindings.data?.items.length ? (
+              <EmptyState
+                bare
+                compact
+                icon={ShieldCheck}
+                title="No open critical findings"
+                description="Critical vulnerabilities that need triage will appear here."
+              />
+            ) : (
+              <ul className="divide-y divide-border">
+                {criticalFindings.data.items.map((f) => (
+                  <li key={f.id}>
+                    <Link
+                      href={`/findings/${f.id}`}
+                      className="block px-5 py-3.5 outline-none transition-colors hover:bg-surface/60 focus-visible:bg-surface"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="line-clamp-2 text-[13px] font-medium text-foreground">{f.title}</p>
+                        <SeverityBadge severity={f.severity as FindingSeverity} compact className="shrink-0" />
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-2 text-[11px] text-subtle-foreground">
+                        <CategoryBadge category={f.category} />
+                        <span className="font-mono">{f.id.slice(0, 8)}</span>
+                        <span className="ml-auto whitespace-nowrap">{formatRelativeTime(f.observed_at)}</span>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        </div>
+      </DashboardSection>
 
-        <Panel
-          className="lg:col-span-2"
-          title="Execution & findings trend"
-          description={`Daily counts · last ${days} days`}
-          icon={Activity}
-        >
-          {trends.isLoading ? (
-            <Skeleton className="h-[280px] w-full" />
-          ) : trends.isError ? (
-            <ErrorState error={trends.error} onRetry={() => trends.refetch()} compact />
-          ) : (
-            <TrendChart
-              data={trends.data?.points ?? []}
-              xKey="date"
-              height={260}
-              series={[
-                { key: 'runs_count', label: 'Test runs', color: SERIES[0] },
-                { key: 'findings_count', label: 'Findings', color: SERIES[1] },
-              ]}
-              emptyMessage="No executions in this period"
-              emptyHint="Launch a test run to start building history."
+      {/* Executions + activity */}
+      <DashboardSection id="overview-executions" title="Executions & activity">
+        <div className="grid gap-4 xl:grid-cols-3 xl:items-start">
+          <Panel
+            headingLevel="h3"
+            className="xl:col-span-2"
+            title="Recent test executions"
+            icon={Activity}
+            flush
+            actions={
+              <PanelLink href="/test-runs" arrow>
+                All runs
+              </PanelLink>
+            }
+          >
+            <DataTable
+              label="Recent test executions"
+              columns={recentRunColumns}
+              data={runs.data?.items.slice(0, 6)}
+              getRowId={(r) => r.id}
+              isLoading={runs.isLoading}
+              error={runs.error}
+              onRetry={() => runs.refetch()}
+              onRowClick={(r) => router.push(`/test-runs/${r.id}`)}
+              skeletonRows={5}
+              empty={
+                <EmptyState
+                  bare
+                  compact
+                  icon={Play}
+                  title="No executions yet"
+                  description="Launch a test run to execute a suite of attack scenarios against a target."
+                  actionText="Launch test run"
+                  actionHref="/test-runs/new"
+                />
+              }
             />
-          )}
-        </Panel>
-      </div>
+          </Panel>
 
-      {/* Distributions */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Panel title="Findings by severity" description={`Last ${days} days`}>
-          {distribution.isLoading ? (
-            <Skeleton className="h-[180px] w-full" />
-          ) : (
-            <BarList items={severityItems} emptyMessage="No findings recorded" />
-          )}
-        </Panel>
-        <Panel title="Vulnerability categories" description={`Last ${days} days`}>
-          {distribution.isLoading ? (
-            <Skeleton className="h-[180px] w-full" />
-          ) : (
-            <BarList items={categoryItems} emptyMessage="No findings recorded" />
-          )}
-        </Panel>
-        <Panel
-          title="Execution status"
-          description={`Most recent ${formatNumber(Math.min(runs.data?.items.length ?? 0, RUN_SAMPLE))} runs`}
-        >
-          {runs.isLoading ? (
-            <Skeleton className="h-[120px] w-full" />
-          ) : (
-            <SegmentBar items={runStatusMix} emptyMessage="No test runs yet" />
-          )}
-        </Panel>
-      </div>
-
-      {/* Attack outcomes + critical findings */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Panel
-          className="lg:col-span-2"
-          title="Successful attack outcomes"
-          description="Daily canary exposures and unauthorized tool calls observed in target output"
-          icon={Fingerprint}
-        >
-          {trends.isLoading ? (
-            <Skeleton className="h-[240px] w-full" />
-          ) : (
-            <ColumnChart
-              data={trends.data?.points ?? []}
-              xKey="date"
-              height={220}
-              series={[
-                { key: 'canary_exposures', label: 'Canary exposures', color: SERIES[4] },
-                { key: 'tool_violations', label: 'Tool violations', color: SERIES[3] },
-              ]}
-              emptyMessage="No attack outcomes in this period"
-            />
-          )}
-        </Panel>
-
-        <Panel
-          title="Open critical findings"
-          icon={Siren}
-          flush
-          actions={
-            <Link
-              href="/findings?severity=CRITICAL&status=OPEN"
-              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1 xl:content-start">
+            <Panel
+              headingLevel="h3"
+              title="Execution status"
+              description={runs.isError ? 'Unavailable' : `Most recent ${formatNumber(Math.min(runs.data?.items.length ?? 0, RUN_SAMPLE))} runs`}
             >
-              View all <ArrowRight className="h-3 w-3" />
-            </Link>
-          }
-        >
-          {criticalFindings.isLoading ? (
-            <div className="space-y-3 p-4">
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          ) : criticalFindings.isError ? (
-            <div className="p-4">
-              <ErrorState error={criticalFindings.error} onRetry={() => criticalFindings.refetch()} compact />
-            </div>
-          ) : !criticalFindings.data?.items.length ? (
-            <EmptyState
-              bare
-              compact
-              icon={ShieldCheck}
-              title="No open critical findings"
-              description="Critical vulnerabilities that need triage will appear here."
-            />
-          ) : (
-            <ul className="divide-y divide-border/70">
-              {criticalFindings.data.items.map((f) => (
-                <li key={f.id}>
-                  <Link href={`/findings/${f.id}`} className="block px-4 py-3 transition-colors hover:bg-surface/60">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="line-clamp-2 text-[13px] font-medium text-foreground">{f.title}</p>
-                      <SeverityBadge severity={f.severity as FindingSeverity} compact className="shrink-0" />
-                    </div>
-                    <div className="mt-1.5 flex items-center gap-2 text-[11px] text-subtle-foreground">
-                      <CategoryBadge category={f.category} />
-                      <span className="font-mono">{f.id.slice(0, 8)}</span>
-                      <span className="ml-auto">{formatRelativeTime(f.observed_at)}</span>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Panel>
-      </div>
+              {runs.isLoading ? (
+                <Skeleton className="h-[120px] w-full" />
+              ) : runs.isError ? (
+                <ErrorState error={runs.error} onRetry={() => runs.refetch()} compact />
+              ) : (
+                <SegmentBar items={runStatusMix} emptyMessage="No test runs yet" />
+              )}
+            </Panel>
 
-      {/* Recent runs + activity */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Panel
-          className="lg:col-span-2"
-          title="Recent test executions"
-          icon={Activity}
-          flush
-          actions={
-            <Link
-              href="/test-runs"
-              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+            <Panel
+              headingLevel="h3"
+              title="Recent activity"
+              description="Resource changes in this workspace"
+              actions={<PanelLink href="/audit-logs">Audit trail</PanelLink>}
             >
-              All runs <ArrowRight className="h-3 w-3" />
-            </Link>
-          }
+              {activity.isLoading ? (
+                <div className="space-y-3">
+                  {[0, 1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-9 w-full" />
+                  ))}
+                </div>
+              ) : activity.isError ? (
+                <ErrorState error={activity.error} onRetry={() => activity.refetch()} compact />
+              ) : !activity.data?.activities.length ? (
+                <p className="py-6 text-center text-xs text-muted-foreground">No recent activity.</p>
+              ) : (
+                <Timeline
+                  timeFormatter={formatRelativeTime}
+                  items={activity.data.activities.slice(0, 7).map((act, i) => ({
+                    id: `${act.entity_id}-${i}`,
+                    title: act.title,
+                    timestamp: act.timestamp,
+                    tone: act.type.startsWith('target') ? 'info' : act.type.startsWith('scenario') ? 'accent' : 'neutral',
+                  }))}
+                />
+              )}
+            </Panel>
+          </div>
+        </div>
+      </DashboardSection>
+
+      {/* Target overview */}
+      <DashboardSection id="overview-targets" title="Targets">
+        <Panel
+          headingLevel="h3"
+          title="Target security overview"
+          description="Per-target score and exposure across all recorded executions"
+          icon={Crosshair}
+          flush
         >
           <DataTable
-            label="Recent test executions"
-            columns={recentRunColumns}
-            data={runs.data?.items.slice(0, 6)}
-            getRowId={(r) => r.id}
-            isLoading={runs.isLoading}
-            error={runs.error}
-            onRetry={() => runs.refetch()}
-            onRowClick={(r) => router.push(`/test-runs/${r.id}`)}
-            skeletonRows={5}
+            label="Target security overview"
+            columns={targetColumns}
+            data={comparisons.data}
+            getRowId={(t) => t.target_id}
+            isLoading={comparisons.isLoading}
+            error={comparisons.error}
+            onRetry={() => comparisons.refetch()}
+            initialSort={{ id: 'score', direction: 'asc' }}
+            onRowClick={(t) => router.push(`/targets/${t.target_id}`)}
             empty={
               <EmptyState
                 bare
                 compact
-                icon={Play}
-                title="No executions yet"
-                description="Launch a test run to execute a suite of attack scenarios against a target."
-                actionText="Launch test run"
-                actionHref="/test-runs/new"
+                icon={Crosshair}
+                title="No targets evaluated yet"
+                description="Targets appear here once at least one test run has completed against them."
               />
             }
           />
         </Panel>
+      </DashboardSection>
+    </div>
+  );
+}
 
-        <Panel
-          title="Recent activity"
-          description="Resource changes in this workspace"
-          actions={
-            <Link href="/audit-logs" className="text-xs font-medium text-muted-foreground hover:text-foreground">
-              Audit trail
-            </Link>
-          }
-        >
-          {activity.isLoading ? (
-            <div className="space-y-3">
-              {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-9 w-full" />
-              ))}
-            </div>
-          ) : !activity.data?.activities.length ? (
-            <p className="py-6 text-center text-xs text-muted-foreground">No recent activity.</p>
-          ) : (
-            <Timeline
-              timeFormatter={formatRelativeTime}
-              items={activity.data.activities.slice(0, 7).map((act, i) => ({
-                id: `${act.entity_id}-${i}`,
-                title: act.title,
-                timestamp: act.timestamp,
-                tone: act.type.startsWith('target') ? 'info' : act.type.startsWith('scenario') ? 'accent' : 'neutral',
-              }))}
-            />
-          )}
-        </Panel>
-      </div>
+type TrendKey = 'runs_count' | 'findings_count' | 'canary_exposures';
 
-      {/* Target overview */}
-      <Panel
-        title="Target security overview"
-        description="Per-target score and exposure across all recorded executions"
-        icon={Crosshair}
-        flush
-      >
-        <DataTable
-          label="Target security overview"
-          columns={targetColumns}
-          data={comparisons.data}
-          getRowId={(t) => t.target_id}
-          isLoading={comparisons.isLoading}
-          error={comparisons.error}
-          onRetry={() => comparisons.refetch()}
-          initialSort={{ id: 'score', direction: 'asc' }}
-          onRowClick={(t) => router.push(`/targets/${t.target_id}`)}
-          empty={
-            <EmptyState
-              bare
-              compact
-              icon={Crosshair}
-              title="No targets evaluated yet"
-              description="Targets appear here once at least one test run has completed against them."
-            />
-          }
-        />
-      </Panel>
+/** A titled group of panels. The h2 keeps the page outline: h1 page → h2 section → h3 panel. */
+function DashboardSection({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
+  return (
+    <section aria-labelledby={id} className="space-y-4">
+      <h2 id={id} className="text-xs font-semibold uppercase tracking-[0.08em] text-subtle-foreground">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+function PanelLink({ href, arrow = false, children }: { href: string; arrow?: boolean; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+    >
+      {children}
+      {arrow && <ArrowRight className="h-3 w-3" aria-hidden />}
+    </Link>
+  );
+}
+
+function PostureFact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-mono tabular-nums text-foreground">{value}</dd>
     </div>
   );
 }

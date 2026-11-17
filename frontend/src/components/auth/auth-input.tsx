@@ -40,6 +40,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
               className
             )}
             aria-invalid={!!error}
+            aria-required={required || undefined}
             aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
             {...props}
           />

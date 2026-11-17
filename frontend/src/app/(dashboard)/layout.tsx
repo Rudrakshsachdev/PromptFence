@@ -7,6 +7,7 @@ import { TopBar } from '@/components/layout/top-bar';
 import { LogoMark } from '@/components/shared/logo';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/use-auth';
+import { buildLoginUrl } from '@/lib/auth-redirect';
 import { cn } from '@/lib/utils';
 import { SidebarProvider, useSidebar } from '@/providers/sidebar-provider';
 
@@ -29,7 +30,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
         )}
       >
         <TopBar />
-        <main id="main-content" className="w-full flex-1 px-4 py-6 md:px-6 lg:px-8">
+        <main id="main-content" className="w-full flex-1 px-4 py-6 md:px-6 md:py-8 lg:px-8">
           <div className="mx-auto w-full max-w-[1440px]">{children}</div>
         </main>
       </div>
@@ -43,7 +44,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace('/login');
+      // Return the user to the page they were on once they sign in again.
+      router.replace(buildLoginUrl(`${window.location.pathname}${window.location.search}`));
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -51,8 +53,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary">
-            <LogoMark className="h-5 w-5 animate-status-pulse" />
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-card shadow-panel">
+            <LogoMark className="h-7 animate-status-pulse" />
           </span>
           <p className="font-mono text-xs text-subtle-foreground">Verifying session…</p>
         </div>

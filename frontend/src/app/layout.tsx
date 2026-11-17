@@ -26,24 +26,24 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#080D18',
-  colorScheme: 'dark',
+  themeColor: '#FAFAFA',
+  colorScheme: 'light',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
-      className={`dark ${fontSans.variable} ${fontMono.variable}`}
+      className={`${fontSans.variable} ${fontMono.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
-        <ThemeProvider attribute="class" forcedTheme="dark" enableSystem={false}>
+        <ThemeProvider attribute="class" forcedTheme="light" enableSystem={false}>
           <QueryProvider>
             <AuthProvider>
               {children}
               <Toaster
-                theme="dark"
+                theme="light"
                 position="bottom-right"
                 closeButton
                 toastOptions={{
