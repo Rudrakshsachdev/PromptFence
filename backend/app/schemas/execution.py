@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.execution import (
     AssertionStatus,
@@ -27,7 +27,12 @@ class TestRunCreate(BaseModel):
     timeout_seconds: int = Field(default=30, ge=5, le=300, description="Execution timeout per scenario in seconds")
 
 
+# Nested briefs are validated from the ORM relationships TestRunResponse reads
+# (TestRun.target / TestRun.test_suite). Pydantic v2 does not inherit
+# from_attributes from the parent model, so each brief must enable it itself.
 class TargetBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     name: str
     target_type: str
@@ -36,6 +41,8 @@ class TargetBrief(BaseModel):
 
 
 class TestSuiteBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: uuid.UUID
     name: str
     description: str | None = None

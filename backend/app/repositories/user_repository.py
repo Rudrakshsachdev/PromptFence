@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import raiseload
 
 from app.models.user import User
 
@@ -22,8 +23,18 @@ class UserRepository:
         await self.db.refresh(user)
         return user
 
-    async def get_by_id(self, user_id: uuid.UUID) -> User | None:
-        result = await self.db.execute(select(User).where(User.id == user_id))
+    async def get_by_id(self, user_id: uuid.UUID, *, load_roles: bool = True) -> User | None:
+        """Fetch a user. ``load_roles=False`` skips the eager ``User.roles`` load.
+
+        Request authentication only needs the user row; roles are fetched
+        explicitly via RoleRepository where required, so loading them on every
+        request is a wasted round trip. Accessing ``user.roles`` on a user loaded
+        this way raises instead of returning misleading data.
+        """
+        query = select(User).where(User.id == user_id)
+        if not load_roles:
+            query = query.options(raiseload(User.roles))
+        result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_by_email(self, email: str) -> User | None:

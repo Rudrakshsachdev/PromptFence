@@ -1,11 +1,17 @@
 """Async SQLAlchemy database engine and session configuration."""
 
+import time
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, MetaData, func
+from sqlalchemy import DateTime, MetaData, event, exc, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.core.config import settings
@@ -19,12 +25,41 @@ convention = {
     "pk": "pk_%(table_name)s",
 }
 
+def _install_idle_ping(async_engine: AsyncEngine, idle_seconds: float) -> None:
+    """Ping pooled connections only after they have sat idle for `idle_seconds`.
+
+    SQLAlchemy's ``pool_pre_ping`` validates *every* checkout; on asyncpg that
+    ping is wrapped in BEGIN/ROLLBACK (pgbouncer-safe), i.e. several network
+    round trips added to every request. Connections in active use are not the
+    stale ones, so this keeps the safety for idle connections without taxing
+    hot ones. A failed ping raises DisconnectionError, which makes the pool
+    discard that connection and transparently retry with a fresh one.
+    """
+
+    @event.listens_for(async_engine.sync_engine, "checkin")
+    def _mark_returned(dbapi_connection, connection_record):  # noqa: ANN001
+        connection_record.info["returned_at"] = time.monotonic()
+
+    @event.listens_for(async_engine.sync_engine, "checkout")
+    def _ping_if_idle(dbapi_connection, connection_record, connection_proxy):  # noqa: ANN001
+        returned_at = connection_record.info.get("returned_at")
+        if returned_at is None or time.monotonic() - returned_at < idle_seconds:
+            return  # brand-new or recently used connection
+        try:
+            dbapi_connection.ping()
+        except Exception as error:
+            raise exc.DisconnectionError("Stale pooled connection") from error
+
+
 try:
     engine = create_async_engine(
         settings.DATABASE_URL,
         echo=settings.DEBUG,
-        pool_pre_ping=True,
+        pool_size=settings.DB_POOL_SIZE,
+        max_overflow=settings.DB_MAX_OVERFLOW,
+        pool_pre_ping=False,  # replaced by the idle-aware ping below
     )
+    _install_idle_ping(engine, settings.DB_PING_IF_IDLE_SECONDS)
     async_session_factory = async_sessionmaker(
         engine,
         class_=AsyncSession,

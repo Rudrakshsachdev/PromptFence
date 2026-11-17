@@ -48,7 +48,7 @@ async def get_current_user(
         raise AuthenticationError("Invalid user ID in token")
 
     user_repo = UserRepository(db)
-    user = await user_repo.get_by_id(user_id)
+    user = await user_repo.get_by_id(user_id, load_roles=False)
     if not user:
         raise AuthenticationError("User not found or account removed")
 

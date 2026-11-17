@@ -76,6 +76,17 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "lax"
     COOKIE_DOMAIN: str | None = None
 
+    # Database connection pool. The dashboard issues ~10-15 API calls in
+    # parallel per page; a pool smaller than that forces overflow connections
+    # that are closed after every request, and each new TLS + auth handshake to
+    # a remote Postgres costs seconds. Size the pool to the real concurrency.
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 10
+    # Validate a pooled connection before reuse only when it has been idle this
+    # long (stale connections come from idle timeouts / compute suspension).
+    # A ping on every checkout costs BEGIN + ";" + ROLLBACK round trips.
+    DB_PING_IF_IDLE_SECONDS: float = 30.0
+
     # CORS: browser origins allowed to call the API. Requests carry auth cookies
     # (credentials), so only explicit origins are accepted, never "*".
     # Production must set CORS_ORIGINS (JSON list); nothing is allowed by default.
