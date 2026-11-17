@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { CheckCircle2, UserPlus } from 'lucide-react';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
 import { AuthCard, AuthHeader, AuthInput, AuthPasswordInput, AuthButton } from '@/components/auth';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
@@ -74,22 +74,23 @@ export default function RegisterPage() {
   if (isSuccess) {
     return (
       <AuthCard>
-        <div className="py-2 text-center flex flex-col items-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-600 mb-4">
-            <CheckCircle2 className="h-6 w-6" />
+        <div className="py-4 text-center flex flex-col items-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200/90 bg-emerald-50 text-emerald-600 mb-5 shadow-xs">
+            <CheckCircle2 className="h-7 w-7" />
           </span>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-950">
+          <h2 className="text-2xl font-bold tracking-tight text-neutral-950">
             Account Created
           </h2>
-          <p className="mt-2 text-sm text-neutral-500 leading-relaxed max-w-xs">
-            Your account has been registered successfully. You can now sign in to your PromptFence workspace.
+          <p className="mt-2 text-[13.5px] text-neutral-500 leading-relaxed max-w-xs">
+            Your PromptFence account has been provisioned. You can now access your security testing lab workspace.
           </p>
-          <div className="mt-6 w-full">
+          <div className="mt-7 w-full">
             <Link
               href="/login"
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-neutral-950 px-4 text-sm font-semibold text-white shadow-xs transition-all hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
+              className="inline-flex h-10.5 w-full items-center justify-center gap-2 rounded-lg bg-neutral-950 px-4 text-[14px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] transition-all hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
             >
-              Continue to sign in
+              <span>Continue to sign in</span>
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -101,7 +102,7 @@ export default function RegisterPage() {
     <AuthCard>
       <AuthHeader
         title="Create your account"
-        description="Start testing and securing your AI applications against adversarial threats"
+        description="Start testing your AI applications against prompt injection and jailbreaks"
         showLogo
       />
 
@@ -109,6 +110,7 @@ export default function RegisterPage() {
         <AuthInput
           id="full_name"
           label="Full Name"
+          type="text"
           placeholder="Alex Rivera"
           autoComplete="name"
           required
@@ -137,7 +139,7 @@ export default function RegisterPage() {
           required
           showStrength
           strengthValue={passwordVal}
-          helperText="At least 8 characters, including an uppercase letter and a number."
+          helperText="At least 8 characters, with 1 uppercase letter and 1 number."
           disabled={isLoading}
           error={errors.password?.message}
           {...register('password')}
@@ -156,13 +158,13 @@ export default function RegisterPage() {
 
         <div className="pt-2">
           <AuthButton type="submit" isLoading={isLoading} loadingText="Creating account…">
-            <UserPlus className="h-4 w-4" />
             <span>Register Account</span>
+            <ArrowRight className="h-4 w-4" />
           </AuthButton>
         </div>
       </form>
 
-      <p className="mt-6 border-t border-neutral-100 pt-5 text-center text-xs text-neutral-600">
+      <p className="mt-6 border-t border-neutral-100 pt-5 text-center text-[13px] text-neutral-600">
         Already have an account?{' '}
         <Link href="/login" className="font-semibold text-neutral-950 hover:underline">
           Sign in

@@ -21,7 +21,7 @@ export function AuthHeader({
       {showLogo && (
         <Link
           href="/"
-          className="group inline-flex items-center gap-2.5 rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 mb-4"
+          className="group inline-flex items-center gap-2.5 rounded-lg p-1 transition-all duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 mb-5"
           aria-label="PromptFence Home"
         >
           <div className="relative flex shrink-0 items-center justify-center">
@@ -40,10 +40,10 @@ export function AuthHeader({
         </Link>
       )}
 
-      <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-neutral-950">
+      <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight text-neutral-950 leading-tight">
         {title}
       </h1>
-      <p className="mt-1.5 text-xs sm:text-sm text-neutral-500 leading-relaxed max-w-xs">
+      <p className="mt-2 text-[13.5px] text-neutral-500 leading-relaxed max-w-[320px]">
         {description}
       </p>
     </div>

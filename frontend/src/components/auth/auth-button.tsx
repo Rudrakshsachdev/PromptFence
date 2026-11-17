@@ -20,15 +20,15 @@ export function AuthButton({
   ...props
 }: AuthButtonProps) {
   const baseClasses =
-    'inline-flex h-10 w-full items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 select-none';
+    'inline-flex h-10.5 w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-[14px] font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 select-none';
 
   const variantClasses = {
     primary:
-      'bg-neutral-950 text-white shadow-xs hover:bg-neutral-800 active:bg-neutral-900',
+      'bg-neutral-950 text-white shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] hover:bg-neutral-800 active:scale-[0.99]',
     outline:
-      'border border-neutral-200 bg-white text-neutral-900 shadow-xs hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100',
+      'border border-neutral-200 bg-white text-neutral-900 shadow-2xs hover:bg-neutral-50 hover:border-neutral-300 active:bg-neutral-100',
     ghost:
-      'bg-transparent text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950',
+      'bg-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950',
   };
 
   return (

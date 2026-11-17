@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, Mail, ArrowRight } from 'lucide-react';
 import { AuthCard, AuthHeader, AuthInput, AuthButton } from '@/components/auth';
 import { authService } from '@/services/auth.service';
 import { toast } from 'sonner';
@@ -26,6 +26,9 @@ export default function ForgotPasswordPage() {
     formState: { errors },
   } = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: '',
+    },
   });
 
   const onSubmit = async (data: ForgotPasswordFormValues) => {
@@ -45,22 +48,23 @@ export default function ForgotPasswordPage() {
   if (submitted) {
     return (
       <AuthCard>
-        <div className="py-2 text-center flex flex-col items-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-blue-600 mb-4">
-            <Mail className="h-6 w-6" />
+        <div className="py-4 text-center flex flex-col items-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-200/90 bg-blue-50 text-blue-600 mb-5 shadow-xs">
+            <Mail className="h-7 w-7" />
           </span>
-          <h2 className="text-xl font-bold tracking-tight text-neutral-950">
+          <h2 className="text-2xl font-bold tracking-tight text-neutral-950">
             Check your email
           </h2>
-          <p className="mt-2 text-sm text-neutral-500 leading-relaxed max-w-xs">
+          <p className="mt-2 text-[13.5px] text-neutral-500 leading-relaxed max-w-xs">
             If an account exists for that address, recovery instructions have been sent. Please check your inbox and spam folder.
           </p>
-          <div className="mt-6 w-full">
+          <div className="mt-7 w-full">
             <Link
               href="/login"
-              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-900 shadow-xs transition-all hover:bg-neutral-50 hover:border-neutral-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
+              className="inline-flex h-10.5 w-full items-center justify-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 text-[14px] font-semibold text-neutral-900 shadow-2xs transition-all hover:bg-neutral-50 hover:border-neutral-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
             >
-              Return to sign in
+              <ArrowLeft className="h-4 w-4" />
+              <span>Return to sign in</span>
             </Link>
           </div>
         </div>
@@ -91,7 +95,8 @@ export default function ForgotPasswordPage() {
 
         <div className="pt-2">
           <AuthButton type="submit" isLoading={isLoading} loadingText="Sending…">
-            Send Reset Link
+            <span>Send Reset Link</span>
+            <ArrowRight className="h-4 w-4" />
           </AuthButton>
         </div>
       </form>
@@ -99,10 +104,10 @@ export default function ForgotPasswordPage() {
       <div className="mt-6 border-t border-neutral-100 pt-5 text-center">
         <Link
           href="/login"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-neutral-950 transition-colors"
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-950 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Back to sign in</span>
+          <span>Remember your password? Sign in</span>
         </Link>
       </div>
     </AuthCard>
