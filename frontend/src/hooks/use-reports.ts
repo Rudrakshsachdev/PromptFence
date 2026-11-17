@@ -1,13 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { reportService } from '@/services/report.service';
-import { ReportCreate } from '@/types/report';
+import { ReportCreate, ReportJob } from '@/types/report';
+
+/** Poll the report list only while a job is still generating. */
+export function reportListPollInterval(jobs: ReportJob[] | undefined): number | false {
+  return jobs?.some((job) => job.status === 'QUEUED' || job.status === 'RUNNING') ? 3000 : false;
+}
 
 export function useReports() {
   return useQuery({
     queryKey: ['reports'],
     queryFn: () => reportService.listReports(),
-    refetchInterval: 3000, // Poll active jobs
+    refetchInterval: (query) => reportListPollInterval(query.state.data),
   });
 }
 

@@ -3,6 +3,7 @@ Authoritative calculation of deterministic security scores, canary exposure rate
 tool boundary violation rates, false-positive rates, distributions, trends, and target comparisons.
 """
 
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
 import uuid
@@ -398,17 +399,33 @@ async def get_target_comparisons(db: AsyncSession) -> list[TargetComparisonItem]
     targets_res = await db.execute(select(Target))
     targets = targets_res.scalars().all()
 
+    # Batch-load runs and findings once (3 queries total) instead of two
+    # queries per target; the per-target figures below are unchanged.
+    runs_by_target: dict[uuid.UUID, list[TestRun]] = defaultdict(list)
+    findings_by_run: dict[uuid.UUID, list[TaintFinding]] = defaultdict(list)
+    target_ids = [t.id for t in targets]
+    if target_ids:
+        all_runs = (
+            await db.execute(select(TestRun).where(TestRun.target_id.in_(target_ids)))
+        ).scalars().all()
+        for run in all_runs:
+            if run.target_id is not None:  # guaranteed by the IN filter; narrows the Optional
+                runs_by_target[run.target_id].append(run)
+        all_run_ids = [r.id for r in all_runs]
+        if all_run_ids:
+            all_findings = (
+                await db.execute(
+                    select(TaintFinding).where(TaintFinding.test_run_id.in_(all_run_ids))
+                )
+            ).scalars().all()
+            for finding in all_findings:
+                findings_by_run[finding.test_run_id].append(finding)
+
     items: list[TargetComparisonItem] = []
     for t in targets:
-        runs_res = await db.execute(select(TestRun).where(TestRun.target_id == t.id))
-        runs = runs_res.scalars().all()
-        run_ids = [r.id for r in runs]
-
+        runs = runs_by_target[t.id]
         total_cases = sum(r.completed_cases for r in runs)
-        findings_res = await db.execute(
-            select(TaintFinding).where(TaintFinding.test_run_id.in_(run_ids) if run_ids else False)
-        )
-        findings = findings_res.scalars().all() if run_ids else []
+        findings = [f for r in runs for f in findings_by_run[r.id]]
 
         crit = sum(1 for f in findings if f.severity == FindingSeverity.CRITICAL)
         high = sum(1 for f in findings if f.severity == FindingSeverity.HIGH)

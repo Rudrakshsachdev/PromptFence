@@ -7,6 +7,7 @@ from app.models.target import Target
 from app.models.test_case import TestCase
 from app.models.test_suite import TestSuite
 from app.models.user import User
+from app.repositories.dashboard_repository import DashboardRepository
 from app.repositories.target_repository import TargetRepository
 from app.repositories.test_case_repository import TestCaseRepository
 from app.repositories.test_suite_repository import TestSuiteRepository
@@ -20,17 +21,15 @@ class DashboardService:
         self.target_repo = TargetRepository(db)
         self.suite_repo = TestSuiteRepository(db)
         self.test_case_repo = TestCaseRepository(db)
+        self.dashboard_repo = DashboardRepository(db)
 
     async def get_overview(self, user: User) -> dict:
         """Aggregate high-level overview metrics."""
-        total_targets = await self.target_repo.count_by_owner(user.id)
-        active_targets = await self.target_repo.count_active_by_owner(user.id)
-        total_suites = await self.suite_repo.count_by_owner(user.id)
-        total_cases = await self.test_case_repo.count_by_owner(user.id)
-        enabled_cases = await self.test_case_repo.count_enabled_by_owner(user.id)
+        # One round trip for all five counters (previously five sequential queries).
+        counts = await self.dashboard_repo.owner_counts(user.id)
 
         # Recent targets
-        targets, _ = await self.target_repo.list_by_owner(user.id, page=1, page_size=5)
+        targets = await self.dashboard_repo.recent_by_owner(Target, user.id, limit=5)
         recent_targets_list = [
             {
                 "id": str(t.id),
@@ -44,7 +43,7 @@ class DashboardService:
         ]
 
         # Recent scenarios
-        test_cases, _ = await self.test_case_repo.list_by_owner(user.id, page=1, page_size=5)
+        test_cases = await self.dashboard_repo.recent_by_owner(TestCase, user.id, limit=5)
         recent_cases_list = [
             {
                 "id": str(tc.id),
@@ -58,11 +57,11 @@ class DashboardService:
         ]
 
         return {
-            "total_targets": total_targets,
-            "active_targets": active_targets,
-            "total_test_suites": total_suites,
-            "total_test_cases": total_cases,
-            "enabled_test_cases": enabled_cases,
+            "total_targets": counts["total_targets"],
+            "active_targets": counts["active_targets"],
+            "total_test_suites": counts["total_test_suites"],
+            "total_test_cases": counts["total_test_cases"],
+            "enabled_test_cases": counts["enabled_test_cases"],
             "recent_targets": recent_targets_list,
             "recent_test_cases": recent_cases_list,
         }
@@ -71,7 +70,7 @@ class DashboardService:
         """Recent activity across targets, suites, and test cases."""
         activities = []
 
-        targets, _ = await self.target_repo.list_by_owner(user.id, page=1, page_size=5)
+        targets = await self.dashboard_repo.recent_by_owner(Target, user.id, limit=5)
         for t in targets:
             activities.append({
                 "type": "target_created",
@@ -80,7 +79,7 @@ class DashboardService:
                 "entity_id": str(t.id),
             })
 
-        suites, _ = await self.suite_repo.list_by_owner(user.id, page=1, page_size=5)
+        suites = await self.dashboard_repo.recent_by_owner(TestSuite, user.id, limit=5)
         for s in suites:
             activities.append({
                 "type": "test_suite_created",
@@ -89,7 +88,7 @@ class DashboardService:
                 "entity_id": str(s.id),
             })
 
-        test_cases, _ = await self.test_case_repo.list_by_owner(user.id, page=1, page_size=5)
+        test_cases = await self.dashboard_repo.recent_by_owner(TestCase, user.id, limit=5)
         for tc in test_cases:
             activities.append({
                 "type": "scenario_created",

@@ -48,7 +48,12 @@ async def create_test_run(
         concurrency=payload.concurrency,
         timeout_seconds=payload.timeout_seconds,
     )
-    return TestRunResponse.model_validate(run)
+    # Reload with target/test_suite eager-loaded: the response embeds both, and
+    # async sessions cannot lazy-load relationships during serialization.
+    created = await ExecutionRepository(db).get_run_by_id(run.id)
+    if created is None:
+        raise NotFoundException(f"Test run {run.id} not found after creation")
+    return TestRunResponse.model_validate(created)
 
 
 @router.get("", response_model=PaginatedResponse[TestRunResponse])
