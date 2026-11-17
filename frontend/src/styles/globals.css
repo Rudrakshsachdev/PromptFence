@@ -56,6 +56,12 @@
 
     --radius: 0.5rem;
   }
+
+  /* Suppress default browser password reveal/clear icons (Edge/IE) to avoid collision with custom eye toggle */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none !important;
+  }
 }
 
 @layer base {

@@ -29,6 +29,9 @@ export const AuthPasswordInput = React.forwardRef<HTMLInputElement, AuthPassword
   ) => {
     const [showPassword, setShowPassword] = useState(false);
 
+    // Destructure out any 'type' passed in props so it cannot overwrite the dynamic toggle state
+    const { type: _typeProp, ...restProps } = props;
+
     const calculateStrength = (pass: string) => {
       let score = 0;
       if (!pass) return score;
@@ -36,7 +39,7 @@ export const AuthPasswordInput = React.forwardRef<HTMLInputElement, AuthPassword
       if (/[A-Z]/.test(pass)) score += 1;
       if (/[0-9]/.test(pass)) score += 1;
       if (/[^A-Za-z0-9]/.test(pass)) score += 1;
-      return score; // 0 to 4
+      return score;
     };
 
     const val =
@@ -50,6 +53,12 @@ export const AuthPasswordInput = React.forwardRef<HTMLInputElement, AuthPassword
     const strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][score] || '';
     const strengthColor =
       ['', 'text-rose-600', 'text-amber-600', 'text-blue-600', 'text-emerald-600'][score] || '';
+
+    const handleToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setShowPassword((prev) => !prev);
+    };
 
     return (
       <div className="space-y-1.5 text-left">
@@ -66,13 +75,13 @@ export const AuthPasswordInput = React.forwardRef<HTMLInputElement, AuthPassword
             )}
           </label>
         </div>
-        <div className="relative">
+        <div className="relative flex items-center">
           <input
             id={id}
             ref={ref}
             type={showPassword ? 'text' : 'password'}
             className={cn(
-              'flex h-10 w-full rounded-lg border border-neutral-200/90 bg-white pl-3.5 pr-10 py-2 text-[14px] text-neutral-900',
+              'flex h-10 w-full rounded-lg border border-neutral-200/90 bg-white pl-3.5 pr-11 py-2 text-[14px] text-neutral-900',
               'placeholder:text-neutral-400 shadow-[0_1px_2px_rgba(0,0,0,0.02)] transition-all duration-150',
               'hover:border-neutral-300 focus-visible:outline-none focus-visible:border-neutral-950 focus-visible:ring-2 focus-visible:ring-neutral-950/10',
               'disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:text-neutral-500',
@@ -81,20 +90,24 @@ export const AuthPasswordInput = React.forwardRef<HTMLInputElement, AuthPassword
             )}
             aria-invalid={!!error}
             aria-describedby={error ? `${id}-error` : helperText ? `${id}-helper` : undefined}
-            {...props}
+            {...restProps}
           />
           <button
             type="button"
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
-            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex h-7 w-7 items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 active:scale-95"
+            onClick={handleToggle}
+            onMouseDown={(e) => {
+              // Prevent input blur so focus remains active across desktop & mobile
+              e.preventDefault();
+            }}
             aria-label={showPassword ? 'Hide value' : 'Show value'}
-            title={showPassword ? 'Hide text' : 'Show text'}
+            title={showPassword ? 'Hide value' : 'Show value'}
             tabIndex={-1}
           >
             {showPassword ? (
-              <EyeOff className="h-4 w-4" aria-hidden="true" />
+              <EyeOff className="h-4 w-4 pointer-events-none" aria-hidden="true" />
             ) : (
-              <Eye className="h-4 w-4" aria-hidden="true" />
+              <Eye className="h-4 w-4 pointer-events-none" aria-hidden="true" />
             )}
           </button>
         </div>
