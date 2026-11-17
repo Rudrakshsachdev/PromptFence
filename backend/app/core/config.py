@@ -5,6 +5,16 @@ from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+# Local Next.js dev servers (`next dev` moves to 3001 when 3000 is taken).
+# Allowed automatically only when APP_ENV is development or testing.
+LOCAL_DEV_CORS_ORIGINS: tuple[str, ...] = (
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+)
+
+
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
@@ -66,8 +76,32 @@ class Settings(BaseSettings):
     COOKIE_SAMESITE: str = "lax"
     COOKIE_DOMAIN: str | None = None
 
-    # CORS
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    # CORS: browser origins allowed to call the API. Requests carry auth cookies
+    # (credentials), so only explicit origins are accepted, never "*".
+    # Production must set CORS_ORIGINS (JSON list); nothing is allowed by default.
+    # In development/testing the local frontend origins below are added automatically.
+    CORS_ORIGINS: list[str] = []
+
+    @field_validator("CORS_ORIGINS", mode="after")
+    @classmethod
+    def validate_cors_origins(cls, v: list[str]) -> list[str]:
+        origins: list[str] = []
+        for raw in v:
+            origin = raw.strip().rstrip("/")
+            if not origin:
+                continue
+            if "*" in origin:
+                raise ValueError(
+                    "CORS_ORIGINS must list explicit origins: wildcards cannot be "
+                    "combined with credentialed (cookie) requests"
+                )
+            if not re.fullmatch(r"https?://[^/\s?#]+", origin):
+                raise ValueError(
+                    f"Invalid CORS origin {raw!r}: expected scheme://host[:port] without a path"
+                )
+            if origin not in origins:
+                origins.append(origin)
+        return origins
 
     # SMTP / Email
     SMTP_HOST: str = "localhost"
@@ -111,6 +145,17 @@ class Settings(BaseSettings):
     @property
     def is_testing(self) -> bool:
         return self.APP_ENV == "testing"
+
+    @property
+    def cors_allowed_origins(self) -> list[str]:
+        """Effective CORS allow-list: configured origins, plus local dev frontends.
+
+        The local origins are added only in development and testing, never in production.
+        """
+        origins = list(self.CORS_ORIGINS)
+        if self.is_development or self.is_testing:
+            origins.extend(o for o in LOCAL_DEV_CORS_ORIGINS if o not in origins)
+        return origins
 
 
 settings = Settings()

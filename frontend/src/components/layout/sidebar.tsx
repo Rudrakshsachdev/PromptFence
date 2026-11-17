@@ -16,13 +16,13 @@ function NavLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
   const activeHref = getActiveNavHref(pathname);
 
   return (
-    <nav aria-label="Primary" className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-3">
+    <nav aria-label="Primary" className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
       {NAVIGATION_SECTIONS.map((section, sIdx) => (
-        <div key={section.title} className={cn(sIdx > 0 && 'mt-4')}>
+        <div key={section.title} className={cn(sIdx > 0 && 'mt-5')}>
           {collapsed ? (
-            sIdx > 0 && <div className="mx-2 mb-3 h-px bg-border/70" aria-hidden />
+            sIdx > 0 && <div className="mx-1.5 mb-4 h-px bg-border" aria-hidden />
           ) : (
-            <p className="mb-1 px-2.5 text-[10px] font-medium uppercase tracking-[0.08em] text-subtle-foreground">
+            <p className="mb-1.5 px-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-subtle-foreground">
               {section.title}
             </p>
           )}
@@ -37,23 +37,17 @@ function NavLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={collapsed ? item.title : undefined}
                   className={cn(
-                    'group relative flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60',
+                    'group relative flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring/60',
                     isActive
-                      ? 'bg-primary/10 text-foreground'
-                      : 'text-muted-foreground hover:bg-surface hover:text-foreground',
+                      ? 'bg-surface font-semibold text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))]'
+                      : 'font-medium text-muted-foreground hover:bg-surface/70 hover:text-foreground',
                     collapsed && 'justify-center px-0',
                   )}
                 >
-                  {isActive && (
-                    <span
-                      aria-hidden
-                      className="absolute -left-2 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary"
-                    />
-                  )}
                   <Icon
                     className={cn(
                       'h-4 w-4 shrink-0 transition-colors',
-                      isActive ? 'text-primary' : 'text-subtle-foreground group-hover:text-muted-foreground',
+                      isActive ? 'text-foreground' : 'text-subtle-foreground group-hover:text-foreground',
                     )}
                     aria-hidden
                   />
@@ -87,25 +81,25 @@ function UserFooter({ collapsed }: { collapsed: boolean }) {
   const role = user?.roles?.[0];
 
   return (
-    <div className="border-t border-border p-2">
+    <div className="border-t border-border p-3">
       <div className={cn('flex items-center gap-2', collapsed && 'flex-col')}>
         <SimpleTooltip label={user?.full_name || 'Profile'} side="right" disabled={!collapsed}>
           <Link
             href="/profile"
             className={cn(
-              'flex min-w-0 flex-1 items-center gap-2.5 rounded-md p-1.5 outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring/60',
+              'flex min-w-0 flex-1 items-center gap-2.5 rounded-lg p-1.5 outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-ring/60',
               collapsed && 'flex-none justify-center',
             )}
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-hover text-[11px] font-semibold text-foreground">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground">
               {initials}
             </span>
             {!collapsed && (
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs font-medium text-foreground">
+                <span className="block truncate text-[13px] font-semibold text-foreground">
                   {user?.full_name || 'Signed in'}
                 </span>
-                <span className="block truncate text-[11px] text-subtle-foreground">
+                <span className="block truncate text-[11px] capitalize text-subtle-foreground">
                   {role ? role.replace(/_/g, ' ').toLowerCase() : user?.email}
                 </span>
               </span>
@@ -117,7 +111,7 @@ function UserFooter({ collapsed }: { collapsed: boolean }) {
             type="button"
             onClick={() => logout()}
             aria-label="Sign out"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-subtle-foreground transition-colors hover:bg-critical/10 hover:text-critical focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-subtle-foreground transition-colors hover:bg-critical/10 hover:text-critical focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
           >
             <LogOut className="h-3.5 w-3.5" />
           </button>
@@ -154,8 +148,8 @@ export function Sidebar() {
       >
         <div
           className={cn(
-            'flex h-14 shrink-0 items-center border-b border-border',
-            isCollapsed ? 'justify-center px-2' : 'justify-between px-3',
+            'flex h-16 shrink-0 items-center border-b border-border',
+            isCollapsed ? 'justify-center px-2' : 'justify-between pl-4 pr-3',
           )}
         >
           <Logo collapsed={isCollapsed} />
@@ -165,7 +159,7 @@ export function Sidebar() {
                 type="button"
                 onClick={toggleCollapse}
                 aria-label="Collapse sidebar"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-subtle-foreground transition-colors hover:bg-surface hover:text-foreground"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-subtle-foreground transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
               >
                 <PanelLeftClose className="h-4 w-4" />
               </button>
@@ -179,7 +173,7 @@ export function Sidebar() {
                 type="button"
                 onClick={toggleCollapse}
                 aria-label="Expand sidebar"
-                className="flex h-7 w-7 items-center justify-center rounded-md text-subtle-foreground transition-colors hover:bg-surface hover:text-foreground"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-subtle-foreground transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
               >
                 <PanelLeftOpen className="h-4 w-4" />
               </button>
@@ -194,17 +188,17 @@ export function Sidebar() {
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
           <div
-            className="absolute inset-0 bg-background/70 backdrop-blur-[2px] animate-in fade-in-0"
+            className="absolute inset-0 bg-foreground/20 backdrop-blur-[2px] animate-in fade-in-0"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col border-r border-border bg-sidebar shadow-overlay animate-in slide-in-from-left duration-200">
-            <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
+          <aside className="absolute inset-y-0 left-0 flex w-[272px] max-w-[85vw] flex-col border-r border-border bg-sidebar shadow-overlay animate-in slide-in-from-left duration-200">
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-border pl-4 pr-3">
               <Logo />
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close navigation"
-                className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-surface hover:text-foreground"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-subtle-foreground transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
               >
                 <X className="h-4 w-4" />
               </button>

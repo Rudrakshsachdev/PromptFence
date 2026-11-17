@@ -2,7 +2,7 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.api.v1.router import v1_router
@@ -10,12 +10,7 @@ from app.core.config import settings
 from app.core.database import Base, engine
 from app.core.exceptions import AppError
 from app.core.logging import setup_logging
-from app.middleware import (
-    RateLimitMiddleware,
-    RequestLoggingMiddleware,
-    SecurityHeadersMiddleware,
-    setup_cors,
-)
+from app.middleware import configure_middleware, internal_error_response
 
 # Initialize structured logging
 setup_logging()
@@ -42,11 +37,8 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
-# Middlewares
-setup_cors(app)
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RateLimitMiddleware, max_requests=settings.RATE_LIMIT_REQUESTS, window_seconds=settings.RATE_LIMIT_WINDOW_SECONDS)
-app.add_middleware(RequestLoggingMiddleware)
+# Middlewares (order matters, see configure_middleware)
+configure_middleware(app)
 
 
 # Global Exception Handler for custom application errors
@@ -61,18 +53,14 @@ async def app_error_handler(request: Request, exc: AppError):
     )
 
 
-# General Exception Handler for unhandled exceptions
+# Last-resort handler for exceptions raised outside UnhandledExceptionMiddleware
+# (i.e. in the outer middleware layers). Route errors are handled there instead,
+# so they keep their CORS headers.
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     import logging
     logging.getLogger("promptfence").exception("Unhandled exception: %s", exc)
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "detail": "An internal server error occurred.",
-            "code": "INTERNAL_SERVER_ERROR",
-        },
-    )
+    return internal_error_response()
 
 
 # Health check endpoint

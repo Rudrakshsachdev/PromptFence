@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ChartEmpty } from '@/components/charts/chart-parts';
+import { SERIES } from '@/components/charts/chart-theme';
 import { formatNumber } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
@@ -57,7 +58,7 @@ export function BarList({
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
               <div
                 className="h-full rounded-full"
-                style={{ width: `${pct}%`, backgroundColor: item.color ?? '#818CF8', minWidth: item.value > 0 ? 3 : 0 }}
+                style={{ width: `${pct}%`, backgroundColor: item.color ?? SERIES[0], minWidth: item.value > 0 ? 3 : 0 }}
               />
             </div>
           </>

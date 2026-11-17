@@ -6,23 +6,36 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CheckCircle2, ArrowRight } from 'lucide-react';
-import { AuthCard, AuthHeader, AuthInput, AuthPasswordInput, AuthButton } from '@/components/auth';
-import { useAuth } from '@/hooks/use-auth';
 import { toast } from 'sonner';
+import {
+  AuthAlert,
+  AuthButton,
+  AuthCard,
+  AuthHeader,
+  AuthInput,
+  AuthPasswordInput,
+  authButtonClasses,
+} from '@/components/auth';
+import { useAuth, useRedirectIfAuthenticated } from '@/hooks/use-auth';
+import {
+  PASSWORDS_DO_NOT_MATCH,
+  PASSWORD_POLICY_HINT,
+  confirmPasswordSchema,
+  emailSchema,
+  fullNameSchema,
+  getErrorMessage,
+  newPasswordSchema,
+} from '@/lib/auth-schemas';
 
 const registerSchema = z
   .object({
-    full_name: z.string().min(2, 'Full name must be at least 2 characters'),
-    email: z.string().email('Please enter a valid email address'),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[A-Z]/, 'Must include at least one uppercase letter')
-      .regex(/[0-9]/, 'Must include at least one number'),
-    confirm_password: z.string().min(1, 'Please confirm your password'),
+    full_name: fullNameSchema,
+    email: emailSchema,
+    password: newPasswordSchema,
+    confirm_password: confirmPasswordSchema,
   })
   .refine((data) => data.password === data.confirm_password, {
-    message: 'Passwords do not match',
+    message: PASSWORDS_DO_NOT_MATCH,
     path: ['confirm_password'],
   });
 
@@ -30,8 +43,10 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const { register: registerUser } = useAuth();
+  useRedirectIfAuthenticated();
   const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -51,6 +66,7 @@ export default function RegisterPage() {
   const passwordVal = watch('password');
 
   const onSubmit = async (data: RegisterFormValues) => {
+    setFormError(null);
     setIsLoading(true);
     try {
       await registerUser({
@@ -58,39 +74,34 @@ export default function RegisterPage() {
         password: data.password,
         full_name: data.full_name,
       });
-      setIsSuccess(true);
+      setRegisteredEmail(data.email);
       toast.success('Registration completed successfully');
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        toast.error(err.message || 'Registration failed');
-      } else {
-        toast.error('An unexpected error occurred');
-      }
+      setFormError(getErrorMessage(err, 'Registration failed. Please try again.'));
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (isSuccess) {
+  if (registeredEmail) {
     return (
       <AuthCard>
-        <div className="py-4 text-center flex flex-col items-center">
+        <div className="py-4 text-center flex flex-col items-center" role="status">
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200/90 bg-emerald-50 text-emerald-600 mb-5 shadow-xs">
-            <CheckCircle2 className="h-7 w-7" />
+            <CheckCircle2 className="h-7 w-7" aria-hidden="true" />
           </span>
-          <h2 className="text-2xl font-bold tracking-tight text-neutral-950">
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-950">
             Account Created
-          </h2>
+          </h1>
           <p className="mt-2 text-[13.5px] text-neutral-500 leading-relaxed max-w-xs">
-            Your PromptFence account has been provisioned. You can now access your security testing lab workspace.
+            Your PromptFence account has been provisioned. We&apos;ve sent a verification link to{' '}
+            <span className="font-medium text-neutral-800 break-all">{registeredEmail}</span>. You
+            can sign in to your security testing lab now.
           </p>
           <div className="mt-7 w-full">
-            <Link
-              href="/login"
-              className="inline-flex h-10.5 w-full items-center justify-center gap-2 rounded-lg bg-neutral-950 px-4 text-[14px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.12)] transition-all hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
-            >
+            <Link href="/login" className={authButtonClasses('primary')}>
               <span>Continue to sign in</span>
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
         </div>
@@ -106,7 +117,14 @@ export default function RegisterPage() {
         showLogo
       />
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      {formError && <AuthAlert>{formError}</AuthAlert>}
+
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-4"
+        noValidate
+        aria-busy={isLoading || undefined}
+      >
         <AuthInput
           id="full_name"
           label="Full Name"
@@ -139,10 +157,10 @@ export default function RegisterPage() {
           required
           showStrength
           strengthValue={passwordVal}
-          helperText="At least 8 characters, with 1 uppercase letter and 1 number."
+          helperText={PASSWORD_POLICY_HINT}
           disabled={isLoading}
           error={errors.password?.message}
-          {...register('password')}
+          {...register('password', { deps: ['confirm_password'] })}
         />
 
         <AuthPasswordInput
@@ -159,7 +177,7 @@ export default function RegisterPage() {
         <div className="pt-2">
           <AuthButton type="submit" isLoading={isLoading} loadingText="Creating account…">
             <span>Register Account</span>
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </AuthButton>
         </div>
       </form>

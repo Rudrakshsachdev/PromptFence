@@ -6,27 +6,43 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, KeyRound, AlertTriangle, ArrowRight } from 'lucide-react';
-import { AuthCard, AuthHeader, AuthPasswordInput, AuthButton } from '@/components/auth';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  AuthAlert,
+  AuthButton,
+  AuthCard,
+  AuthHeader,
+  AuthPasswordInput,
+} from '@/components/auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { authService } from '@/services/auth.service';
-import { toast } from 'sonner';
+import { ApiError } from '@/lib/api-client';
+import {
+  PASSWORDS_DO_NOT_MATCH,
+  PASSWORD_POLICY_HINT,
+  confirmPasswordSchema,
+  getErrorMessage,
+  newPasswordSchema,
+} from '@/lib/auth-schemas';
 
 const resetPasswordSchema = z
   .object({
-    new_password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[A-Z]/, 'Must include at least one uppercase letter')
-      .regex(/[0-9]/, 'Must include at least one number'),
-    confirm_password: z.string().min(1, 'Please confirm your password'),
+    new_password: newPasswordSchema,
+    confirm_password: confirmPasswordSchema,
   })
   .refine((data) => data.new_password === data.confirm_password, {
-    message: 'Passwords do not match',
+    message: PASSWORDS_DO_NOT_MATCH,
     path: ['confirm_password'],
   });
 
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+
+const requestNewLink = (
+  <Link href="/forgot-password" className="font-semibold text-neutral-950 underline underline-offset-2">
+    request a new one
+  </Link>
+);
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -34,6 +50,9 @@ function ResetPasswordForm() {
   const token = searchParams.get('token');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState<{ message: string; tokenRejected: boolean } | null>(
+    null,
+  );
 
   const {
     register,
@@ -51,11 +70,9 @@ function ResetPasswordForm() {
   const passwordVal = watch('new_password');
 
   const onSubmit = async (data: ResetPasswordFormValues) => {
-    if (!token) {
-      toast.error('Missing reset token in URL parameters');
-      return;
-    }
+    if (!token) return;
 
+    setFormError(null);
     setIsLoading(true);
     try {
       await authService.resetPassword({
@@ -63,14 +80,15 @@ function ResetPasswordForm() {
         new_password: data.new_password,
       });
       toast.success('Password updated successfully! Please sign in.');
-      router.push('/login');
+      // replace(): the single-use token URL should not stay in history, and the
+      // form stays locked so the consumed token cannot be submitted twice.
+      router.replace('/login');
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        toast.error(err.message || 'Failed to reset password');
-      } else {
-        toast.error('An unexpected error occurred');
-      }
-    } finally {
+      setFormError({
+        message: getErrorMessage(err, 'Failed to reset password. Please try again.'),
+        // Invalid / used / expired tokens are reported as application 422s.
+        tokenRejected: err instanceof ApiError && err.code === 'ValidationError',
+      });
       setIsLoading(false);
     }
   };
@@ -84,22 +102,25 @@ function ResetPasswordForm() {
       />
 
       {!token && (
-        <div
-          role="alert"
-          className="mb-5 flex items-start gap-2.5 rounded-xl border border-amber-200/90 bg-amber-50/80 p-3.5 text-[12.5px] text-amber-800"
-        >
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-          <p className="leading-relaxed">
-            This link is missing a valid reset token. Open the link from your recovery email, or{' '}
-            <Link href="/forgot-password" className="font-semibold text-neutral-950 underline underline-offset-2">
-              request a new one
-            </Link>
-            .
-          </p>
-        </div>
+        <AuthAlert variant="warning">
+          This link is missing a valid reset token. Open the link from your recovery email, or{' '}
+          {requestNewLink}.
+        </AuthAlert>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+      {formError && (
+        <AuthAlert>
+          {formError.message}
+          {formError.tokenRejected && <> You can {requestNewLink}.</>}
+        </AuthAlert>
+      )}
+
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-4"
+        noValidate
+        aria-busy={isLoading || undefined}
+      >
         <AuthPasswordInput
           id="new_password"
           label="New Password"
@@ -108,10 +129,10 @@ function ResetPasswordForm() {
           strengthValue={passwordVal}
           autoComplete="new-password"
           required
-          helperText="At least 8 characters, including 1 uppercase letter and 1 number."
-          disabled={isLoading}
+          helperText={PASSWORD_POLICY_HINT}
+          disabled={isLoading || !token}
           error={errors.new_password?.message}
-          {...register('new_password')}
+          {...register('new_password', { deps: ['confirm_password'] })}
         />
 
         <AuthPasswordInput
@@ -120,15 +141,20 @@ function ResetPasswordForm() {
           placeholder="••••••••••••"
           autoComplete="new-password"
           required
-          disabled={isLoading}
+          disabled={isLoading || !token}
           error={errors.confirm_password?.message}
           {...register('confirm_password')}
         />
 
         <div className="pt-2">
-          <AuthButton type="submit" isLoading={isLoading} loadingText="Updating…">
+          <AuthButton
+            type="submit"
+            isLoading={isLoading}
+            loadingText="Updating…"
+            disabled={!token}
+          >
             <span>Save new password</span>
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </AuthButton>
         </div>
       </form>
@@ -138,7 +164,7 @@ function ResetPasswordForm() {
           href="/login"
           className="inline-flex items-center gap-1.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-950 transition-colors"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
           <span>Back to sign in</span>
         </Link>
       </div>
@@ -151,7 +177,7 @@ export default function ResetPasswordPage() {
     <Suspense
       fallback={
         <AuthCard>
-          <div className="space-y-4 py-4" aria-busy="true">
+          <div className="space-y-4 py-4 [&>*]:bg-neutral-100" aria-busy="true">
             <Skeleton className="mx-auto h-8 w-8 rounded-full" />
             <Skeleton className="mx-auto h-6 w-48" />
             <Skeleton className="mx-auto h-4 w-64" />

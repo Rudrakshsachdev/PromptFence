@@ -10,23 +10,26 @@ import { FormField } from '@/components/forms/form-field';
 import { PasswordInput } from '@/components/forms/password-input';
 import { Button } from '@/components/ui/button';
 import { authService } from '@/services/auth.service';
+import { PASSWORDS_DO_NOT_MATCH, newPasswordSchema } from '@/lib/auth-schemas';
 
 const passwordSchema = z
   .object({
     current_password: z.string().min(1, 'Current password is required'),
-    new_password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[A-Z]/, 'Must include an uppercase letter')
-      .regex(/[0-9]/, 'Must include a number'),
+    new_password: newPasswordSchema,
     confirm_password: z.string().min(1, 'Please confirm your new password'),
   })
   .refine((data) => data.new_password === data.confirm_password, {
-    message: 'Passwords do not match',
+    message: PASSWORDS_DO_NOT_MATCH,
     path: ['confirm_password'],
   });
 
 type PasswordFormValues = z.infer<typeof passwordSchema>;
+
+const EMPTY_VALUES: PasswordFormValues = {
+  current_password: '',
+  new_password: '',
+  confirm_password: '',
+};
 
 /** Change password (POST /users/me/change-password). Other sessions are signed out by the server. */
 export function ChangePasswordForm() {
@@ -37,7 +40,12 @@ export function ChangePasswordForm() {
     reset,
     watch,
     formState: { errors },
-  } = useForm<PasswordFormValues>({ resolver: zodResolver(passwordSchema) });
+  } = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordSchema),
+    // Defined defaults keep the watched (controlled) strength input from
+    // flipping between uncontrolled and controlled on first input and reset().
+    defaultValues: EMPTY_VALUES,
+  });
 
   const newPasswordVal = watch('new_password');
 
@@ -48,7 +56,7 @@ export function ChangePasswordForm() {
         current_password: values.current_password,
         new_password: values.new_password,
       });
-      reset();
+      reset(EMPTY_VALUES);
       toast.success('Password changed successfully. All other sessions have been logged out.');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -84,7 +92,7 @@ export function ChangePasswordForm() {
             placeholder="••••••••••••"
             showStrength
             value={newPasswordVal}
-            {...register('new_password')}
+            {...register('new_password', { deps: ['confirm_password'] })}
             disabled={isChangingPassword}
           />
         </FormField>

@@ -40,7 +40,7 @@ Before deploying to production, verify all environment variables in `.env`:
 | `SECRET_KEY` | 64+ char random hex | Secret key for cryptographic signatures and JWTs |
 | `DATABASE_URL` | `postgresql+asyncpg://...` | Connection string to managed PostgreSQL database |
 | `ALLOWED_HOSTS` | FQDN list | Host header validation |
-| `CORS_ORIGINS` | `https://promptfence.yourdomain.com` | Strict CORS origin whitelisting |
+| `CORS_ORIGINS` | `["https://promptfence.yourdomain.com"]` | **Required in production.** JSON list of exact frontend origins allowed to call the API with cookies; wildcards are rejected. Local dev ports are only auto-allowed when `APP_ENV` is `development`/`testing`. |
 | `SECURE_COOKIES` | `true` | Enforces `Secure` flag on all session and auth cookies |
 | `SSRF_ALLOW_PRIVATE_IPS` | `false` | Must strictly be false in production |
 

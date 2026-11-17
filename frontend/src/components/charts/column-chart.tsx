@@ -34,6 +34,7 @@ export function ColumnChart<T extends object>({
   valueFormatter = (v: number) => String(v),
   emptyMessage,
   emptyHint,
+  legendTotals = false,
 }: {
   data: T[];
   xKey: keyof T & string;
@@ -44,6 +45,11 @@ export function ColumnChart<T extends object>({
   valueFormatter?: (value: number) => string;
   emptyMessage?: string;
   emptyHint?: string;
+  /**
+   * Show each series' total for the plotted range in the legend. Use it when a
+   * series colour is below 3:1 on the surface, so values never rely on colour.
+   */
+  legendTotals?: boolean;
 }) {
   if (!data.length) return <ChartEmpty height={height} message={emptyMessage} hint={emptyHint} />;
 
@@ -67,7 +73,21 @@ export function ColumnChart<T extends object>({
   return (
     <div>
       {series.length > 1 && (
-        <ChartLegend className="mb-3" items={series.map((s) => ({ label: s.label, color: s.color }))} />
+        <ChartLegend
+          className="mb-3"
+          items={series.map((s) => ({
+            label: s.label,
+            color: s.color,
+            value: legendTotals
+              ? valueFormatter(
+                  data.reduce((sum, row) => {
+                    const v = (row as Record<string, unknown>)[s.key];
+                    return sum + (typeof v === 'number' ? v : 0);
+                  }, 0),
+                )
+              : undefined,
+          }))}
+        />
       )}
       <div style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">

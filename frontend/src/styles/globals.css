@@ -5,52 +5,55 @@
 /*
  * PromptFence design tokens.
  *
- * The product ships a single dark, technical theme. Every colour is defined
+ * The product uses one light theme that matches the public landing page:
+ * neutral canvas, white surfaces, hairline neutral borders, near-black ink and
+ * primary actions, with colour reserved for status. Every colour is defined
  * here once (as HSL channels so Tailwind opacity modifiers work) and consumed
- * through semantic utilities: bg-background, bg-card, bg-surface, text-foreground,
- * text-muted-foreground, border-border, text-primary, text-info, text-success,
- * text-warning, text-critical. Pages must not hardcode slate/white/teal colours.
+ * through semantic utilities: bg-background, bg-card, bg-surface,
+ * text-foreground, text-muted-foreground, border-border, text-primary,
+ * text-info, text-success, text-warning, text-critical. Pages must not
+ * hardcode colours. Status tones are text-safe (>= 4.5:1 on card and canvas)
+ * and mirror the chart hex values in components/charts/chart-theme.ts.
  */
 @layer base {
-  :root,
-  .dark {
-    color-scheme: dark;
+  :root {
+    color-scheme: light;
 
     /* Surfaces */
-    --background: 221 50% 6%; /* #080D18 main canvas */
-    --sidebar: 220 49% 8%; /* #0B1220 navigation rail */
-    --card: 219 45% 12%; /* #111B2D primary surface */
-    --surface: 219 44% 15%; /* #162238 secondary surface / insets */
-    --surface-hover: 218 40% 18%;
-    --popover: 219 45% 12%;
+    --background: 0 0% 98%; /* #FAFAFA app canvas */
+    --sidebar: 0 0% 100%; /* #FFFFFF navigation rail */
+    --card: 0 0% 100%; /* #FFFFFF primary surface */
+    --surface: 0 0% 96%; /* #F5F5F5 insets, hovers, tracks */
+    --surface-hover: 0 0% 93%; /* #EDEDED */
+    --popover: 0 0% 100%;
 
     /* Ink */
-    --foreground: 210 40% 96%; /* #F1F5F9 */
-    --card-foreground: 210 40% 96%;
-    --popover-foreground: 210 40% 96%;
-    --muted: 219 44% 15%;
-    --muted-foreground: 215 20% 65%; /* #94A3B8 */
-    --subtle-foreground: 215 16% 47%; /* #64748B tertiary labels */
+    --foreground: 0 0% 4%; /* #0A0A0A */
+    --card-foreground: 0 0% 4%;
+    --popover-foreground: 0 0% 4%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 32%; /* #525252 */
+    --subtle-foreground: 0 0% 45%; /* #737373 tertiary labels */
 
     /* Lines */
-    --border: 216 32% 22%; /* #263449 */
-    --border-strong: 215 28% 30%;
-    --input: 216 32% 22%;
-    --ring: 235 89% 74%;
+    --border: 0 0% 90%; /* #E5E5E5 */
+    --border-strong: 0 0% 83%; /* #D4D4D4 */
+    --input: 0 0% 90%;
+    --ring: 0 0% 4%;
 
     /* Brand + semantic accents */
-    --primary: 235 89% 74%; /* #818CF8 indigo */
-    --primary-foreground: 226 57% 12%;
-    --secondary: 219 44% 15%;
-    --secondary-foreground: 210 40% 96%;
-    --accent: 218 40% 18%;
-    --accent-foreground: 210 40% 96%;
-    --info: 188 86% 53%; /* #22D3EE cyan */
-    --success: 160 64% 52%; /* #34D399 */
-    --warning: 43 96% 56%; /* #FBBF24 */
-    --high: 27 96% 61%; /* #FB923C */
-    --critical: 0 91% 71%; /* #F87171 */
-    --low: 213 94% 68%; /* #60A5FA */
+    --primary: 0 0% 9%; /* #171717, matches landing-page CTAs */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+    --info: 193 82% 31%; /* #0E7490 */
+    --success: 163 94% 24%; /* #047857 */
+    --warning: 26 90% 37%; /* #B45309 */
+    --high: 17 88% 40%; /* #C2410C */
+    --critical: 0 72% 51%; /* #DC2626 */
+    --low: 221 83% 53%; /* #2563EB */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
@@ -76,8 +79,8 @@
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
   ::selection {
-    background: hsl(var(--primary) / 0.3);
-    color: hsl(var(--foreground));
+    background: hsl(var(--foreground));
+    color: hsl(var(--background));
   }
   /* Tabular numerals wherever numbers line up */
   .tabular-nums,
@@ -85,15 +88,24 @@
   th {
     font-variant-numeric: tabular-nums;
   }
-  /* Native form controls inherit the dark scheme */
+  /* Native form controls follow the light scheme */
   select,
   input,
   textarea {
-    color-scheme: dark;
+    color-scheme: light;
   }
   select option {
     background-color: hsl(var(--card));
     color: hsl(var(--foreground));
+  }
+  /*
+   * Explicit light scheme for the marketing/auth surfaces. The whole app is now
+   * light, so this is redundant there, but it keeps native control chrome
+   * (autofill fill, checkboxes) light if the product theme ever changes.
+   */
+  .scheme-light,
+  .scheme-light :is(select, input, textarea) {
+    color-scheme: light;
   }
 }
 

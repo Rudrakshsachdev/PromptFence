@@ -30,20 +30,29 @@ export const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputPro
       <div className="space-y-1.5">
         <div className="relative">
           <Input
-            type={showPassword ? 'text' : 'password'}
             className={cn('pr-10', className)}
             ref={ref}
             value={value}
             onChange={onChange}
             {...props}
+            // After the spread so a caller-supplied `type` cannot break the toggle
+            type={showPassword ? 'text' : 'password'}
           />
           <button
             type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-subtle-foreground hover:text-foreground focus:outline-none"
-            onClick={() => setShowPassword(!showPassword)}
-            tabIndex={-1}
+            className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-subtle-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:pointer-events-none disabled:opacity-50"
+            onClick={() => setShowPassword((prev) => !prev)}
+            onMouseDown={(e) => e.preventDefault()}
+            aria-label="Show password"
+            aria-pressed={showPassword}
+            aria-controls={props.id}
+            disabled={props.disabled}
           >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <Eye className="h-4 w-4" aria-hidden="true" />
+            )}
           </button>
         </div>
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { TONE_HEX } from '@/components/charts/chart-theme';
 import { TONE_CLASSES, type Tone } from '@/lib/status';
 import { cn } from '@/lib/utils';
 
@@ -69,7 +70,13 @@ export function ScoreDial({
   const c = 2 * Math.PI * r;
   const arc = c * 0.75; // 270° gauge
   const filled = arc * (value / 100);
-  const color = !measured ? '#64748B' : value >= 80 ? '#34D399' : value >= 60 ? '#FBBF24' : '#F87171';
+  const color = !measured
+    ? TONE_HEX.neutral
+    : value >= 80
+      ? TONE_HEX.success
+      : value >= 60
+        ? TONE_HEX.warning
+        : TONE_HEX.critical;
 
   return (
     <div className="flex flex-col items-center">
@@ -80,7 +87,7 @@ export function ScoreDial({
             cy={size / 2}
             r={r}
             fill="none"
-            stroke="#263449"
+            stroke="hsl(var(--surface-hover))"
             strokeWidth={stroke}
             strokeDasharray={`${arc} ${c}`}
             strokeLinecap="round"

@@ -46,11 +46,11 @@ export function TopBar() {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70 lg:px-6">
+      <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border bg-card/90 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-card/75 md:px-6 lg:px-8">
         <button
           type="button"
           onClick={toggleMobileOpen}
-          className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-surface hover:text-foreground lg:hidden"
+          className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 lg:hidden"
           aria-label="Open navigation"
         >
           <Menu className="h-4 w-4" />
@@ -60,16 +60,16 @@ export function TopBar() {
           <Breadcrumb />
         </div>
 
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="flex h-8 items-center gap-2 rounded-md border border-border bg-card px-2.5 text-xs text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 md:w-56"
+            className="flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-border bg-background text-[13px] text-subtle-foreground shadow-panel transition-colors hover:border-border-strong hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 md:w-64 md:justify-start md:px-3"
             aria-label="Search and run commands"
           >
             <Search className="h-3.5 w-3.5" />
             <span className="hidden md:inline">Search…</span>
-            <kbd className="ml-auto hidden rounded border border-border bg-surface px-1.5 py-px font-mono text-[10px] text-subtle-foreground md:inline">
+            <kbd className="ml-auto hidden rounded-md border border-border bg-card px-1.5 py-px font-mono text-[10px] text-subtle-foreground md:inline">
               {isMac ? '⌘' : 'Ctrl'} K
             </kbd>
           </button>
@@ -81,7 +81,7 @@ export function TopBar() {
               <button
                 type="button"
                 aria-label="Account menu"
-                className="ml-1 flex h-8 w-8 items-center justify-center rounded-md bg-surface-hover text-[11px] font-semibold text-foreground transition-colors hover:ring-1 hover:ring-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground transition-shadow hover:ring-4 hover:ring-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2"
               >
                 {initials}
               </button>

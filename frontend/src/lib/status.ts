@@ -113,11 +113,11 @@ export const getSeverityMeta = (v: string | null | undefined) => lookup(SEVERITY
 
 /** Hex values for charts (SVG fills cannot use Tailwind classes). Matches tokens. */
 export const SEVERITY_HEX: Record<FindingSeverity, string> = {
-  CRITICAL: '#F87171',
-  HIGH: '#FB923C',
-  MEDIUM: '#FBBF24',
-  LOW: '#60A5FA',
-  INFO: '#64748B',
+  CRITICAL: '#DC2626',
+  HIGH: '#C2410C',
+  MEDIUM: '#B45309',
+  LOW: '#2563EB',
+  INFO: '#737373',
 };
 
 // ── Categories ──────────────────────────────────────────────────────────────
