@@ -2,7 +2,20 @@
 export const DEFAULT_AUTHENTICATED_ROUTE = '/overview';
 
 /** Public authentication routes — never a post-login destination (avoids loops). */
-const AUTH_ROUTES = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email'];
+const AUTH_ROUTES = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/signup',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/verify-email',
+  '/login',
+  '/register',
+  '/signup',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+];
 
 /**
  * Validate a `?next=` value before navigating to it after sign-in.
@@ -40,5 +53,5 @@ export function getRedirectFromLocation(): string | null {
 /** Build the sign-in URL that returns the user to `path` afterwards. */
 export function buildLoginUrl(path: string): string {
   const safe = getSafeRedirect(path);
-  return safe === DEFAULT_AUTHENTICATED_ROUTE ? '/login' : `/login?next=${encodeURIComponent(safe)}`;
+  return safe === DEFAULT_AUTHENTICATED_ROUTE ? '/auth/login' : `/auth/login?next=${encodeURIComponent(safe)}`;
 }

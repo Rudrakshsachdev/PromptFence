@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
             If an account exists for that address, recovery instructions have been sent. Please check your inbox and spam folder.
           </p>
           <div className="mt-7 w-full">
-            <Link href="/login" className={authButtonClasses('outline')}>
+            <Link href="/auth/login" className={authButtonClasses('outline')}>
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               <span>Return to sign in</span>
             </Link>
@@ -121,7 +121,7 @@ export default function ForgotPasswordPage() {
 
       <div className="mt-6 border-t border-neutral-100 pt-5 text-center">
         <Link
-          href="/login"
+          href="/auth/login"
           className="inline-flex items-center gap-1.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-950 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />

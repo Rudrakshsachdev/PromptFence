@@ -5,14 +5,39 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: '/auth/login',
-        destination: '/login',
-        permanent: false,
+        source: '/login',
+        destination: '/auth/login',
+        permanent: true,
       },
       {
         source: '/signup',
-        destination: '/register',
-        permanent: false,
+        destination: '/auth/register',
+        permanent: true,
+      },
+      {
+        source: '/register',
+        destination: '/auth/register',
+        permanent: true,
+      },
+      {
+        source: '/auth/signup',
+        destination: '/auth/register',
+        permanent: true,
+      },
+      {
+        source: '/forgot-password',
+        destination: '/auth/forgot-password',
+        permanent: true,
+      },
+      {
+        source: '/reset-password',
+        destination: '/auth/reset-password',
+        permanent: true,
+      },
+      {
+        source: '/verify-email',
+        destination: '/auth/verify-email',
+        permanent: true,
       },
     ];
   },
@@ -27,4 +52,3 @@ const nextConfig = {
 };
 
 export default nextConfig;
-

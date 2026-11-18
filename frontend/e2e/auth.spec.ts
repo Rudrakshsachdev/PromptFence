@@ -21,9 +21,14 @@ async function stubAuth(page: Page, endpoint: string, status: number, body: unkn
 }
 
 test.describe('Authentication', () => {
+  test('legacy /login redirects to /auth/login preserving query params', async ({ page }) => {
+    await page.goto('/login?next=%2Ffindings');
+    await expect(page).toHaveURL(/\/auth\/login\?next=%2Ffindings$/);
+  });
+
   test('register shows the confirmation screen', async ({ page }) => {
     await stubAuth(page, 'register', 201, { message: 'Registration successful.' });
-    await page.goto('/register');
+    await page.goto('/auth/register');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Create your account');
 
     await page.fill('#full_name', 'E2E Researcher');
@@ -38,18 +43,18 @@ test.describe('Authentication', () => {
   });
 
   test('invalid credentials show an inline error', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.fill('#email', 'unknown@example.com');
     await page.fill('#password', 'WrongPassword123!');
     await page.getByRole('button', { name: /sign in/i }).click();
 
     await expect(formAlert(page)).toContainText('Invalid email or password');
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/auth\/login$/);
   });
 
   test('protected pages send visitors to sign in and back again', async ({ page }) => {
     await page.goto('/findings');
-    await expect(page).toHaveURL(/\/login\?next=%2Ffindings$/);
+    await expect(page).toHaveURL(/\/auth\/login\?next=%2Ffindings$/);
 
     // Typed rather than via the dev-accounts panel, which production builds omit.
     await page.fill('#email', process.env.E2E_EMAIL ?? 'researcher@promptfence.internal');
@@ -61,7 +66,7 @@ test.describe('Authentication', () => {
   });
 
   test('password visibility toggle works from the keyboard', async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/auth/login');
     await page.locator('#password').fill('Secret123!');
     await page.locator('#password').press('Tab');
 
@@ -74,7 +79,7 @@ test.describe('Authentication', () => {
 
   test('forgot password reports a failed request instead of claiming success', async ({ page }) => {
     await page.route('**/api/v1/auth/forgot-password', (route) => route.abort('internetdisconnected'));
-    await page.goto('/forgot-password');
+    await page.goto('/auth/forgot-password');
     await page.fill('#email', 'someone@example.com');
     await page.getByRole('button', { name: /send reset link/i }).click();
 
@@ -84,14 +89,14 @@ test.describe('Authentication', () => {
 
   test('email verification link resolves', async ({ page }) => {
     await stubAuth(page, 'verify-email', 200, { message: 'verified' });
-    await page.goto('/verify-email?token=e2e-token');
+    await page.goto('/auth/verify-email?token=e2e-token');
 
     await expect(page.getByRole('heading', { name: 'Email verified' })).toBeVisible();
   });
 
   test('auth pages fit a 320px viewport', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 720 });
-    for (const path of ['/login', '/register', '/forgot-password', '/reset-password?token=x']) {
+    for (const path of ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password?token=x']) {
       await page.goto(path);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
       expect(overflow, `${path} scrolls horizontally`).toBe(false);

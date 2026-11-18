@@ -44,7 +44,7 @@ export function LandingFooter() {
             <Link href="#metrics" className="hover:text-neutral-900 transition-colors">
               Metrics
             </Link>
-            <Link href="/login" className="hover:text-neutral-900 transition-colors font-medium">
+            <Link href="/auth/login" className="hover:text-neutral-900 transition-colors font-medium">
               Login
             </Link>
           </div>

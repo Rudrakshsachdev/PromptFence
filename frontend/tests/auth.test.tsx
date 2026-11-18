@@ -4,11 +4,11 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import LoginPage from '@/app/(auth)/login/page';
-import RegisterPage from '@/app/(auth)/register/page';
-import ForgotPasswordPage from '@/app/(auth)/forgot-password/page';
-import ResetPasswordPage from '@/app/(auth)/reset-password/page';
-import VerifyEmailPage from '@/app/(auth)/verify-email/page';
+import LoginPage from '@/app/auth/login/page';
+import RegisterPage from '@/app/auth/register/page';
+import ForgotPasswordPage from '@/app/auth/forgot-password/page';
+import ResetPasswordPage from '@/app/auth/reset-password/page';
+import VerifyEmailPage from '@/app/auth/verify-email/page';
 import DashboardLayout from '@/app/(dashboard)/layout';
 import { AuthPasswordInput } from '@/components/auth';
 import { AuthProvider, SESSION_NOT_ESTABLISHED_MESSAGE, useAuth } from '@/providers/auth-provider';
@@ -169,8 +169,8 @@ describe('Login page', () => {
 
     expect(screen.getByLabelText(/email address/i)).toHaveAttribute('aria-required', 'true');
     expect(screen.getByLabelText(/^password/i)).toHaveAttribute('type', 'password');
-    expect(screen.getByRole('link', { name: /create an account/i })).toHaveAttribute('href', '/register');
-    expect(screen.getByRole('link', { name: /forgot password/i })).toHaveAttribute('href', '/forgot-password');
+    expect(screen.getByRole('link', { name: /create an account/i })).toHaveAttribute('href', '/auth/register');
+    expect(screen.getByRole('link', { name: /forgot password/i })).toHaveAttribute('href', '/auth/forgot-password');
     // The former "Remember me" box never affected the session and was removed.
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
   });
@@ -475,7 +475,7 @@ describe('Register page', () => {
     });
     expect(await screen.findByRole('heading', { name: 'Account Created' })).toBeInTheDocument();
     expect(screen.getByText('ada@example.com')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /continue to sign in/i })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: /continue to sign in/i })).toHaveAttribute('href', '/auth/login');
   });
 
   it('keeps the form and shows the server error when registration fails', async () => {
@@ -494,7 +494,7 @@ describe('Register page', () => {
 
   it('links back to sign in', () => {
     renderWithAuth(<RegisterPage />);
-    expect(screen.getByRole('link', { name: /^sign in$/i })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: /^sign in$/i })).toHaveAttribute('href', '/auth/login');
   });
 });
 
@@ -526,7 +526,7 @@ describe('Forgot password page', () => {
 
     expect(authService.forgotPassword).toHaveBeenCalledWith('ada@example.com');
     expect(await screen.findByRole('heading', { name: /check your email/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /return to sign in/i })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: /return to sign in/i })).toHaveAttribute('href', '/auth/login');
   });
 
   it('does not claim the email was sent when the request fails', async () => {
@@ -544,7 +544,7 @@ describe('Forgot password page', () => {
 
   it('links back to sign in', () => {
     renderWithAuth(<ForgotPasswordPage />);
-    expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/auth/login');
   });
 });
 
@@ -555,7 +555,7 @@ describe('Reset password page', () => {
     renderWithAuth(<ResetPasswordPage />);
 
     expect(screen.getByRole('alert')).toHaveTextContent(/missing a valid reset token/i);
-    expect(screen.getByRole('link', { name: /request a new one/i })).toHaveAttribute('href', '/forgot-password');
+    expect(screen.getByRole('link', { name: /request a new one/i })).toHaveAttribute('href', '/auth/forgot-password');
     expect(screen.getByRole('button', { name: /save new password/i })).toBeDisabled();
     expect(screen.getByLabelText(/^new password/i)).toBeDisabled();
   });
@@ -590,7 +590,7 @@ describe('Reset password page', () => {
 
       await user.click(screen.getByRole('button', { name: /save new password/i }));
 
-      await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/login'));
+      await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/auth/login'));
       expect(authService.resetPassword).toHaveBeenCalledWith({ token: 'reset-token-123', new_password: VALID_PASSWORD });
       expect(screen.getByRole('button', { name: /updating/i })).toBeDisabled();
     });
@@ -606,7 +606,7 @@ describe('Reset password page', () => {
 
       const alert = await screen.findByRole('alert');
       expect(alert).toHaveTextContent('Password reset token has expired');
-      expect(within(alert).getByRole('link', { name: /request a new one/i })).toHaveAttribute('href', '/forgot-password');
+      expect(within(alert).getByRole('link', { name: /request a new one/i })).toHaveAttribute('href', '/auth/forgot-password');
       expect(screen.getByRole('button', { name: /save new password/i })).toBeEnabled();
     });
 
@@ -645,7 +645,7 @@ describe('Verify email page', () => {
     expect(await screen.findByRole('heading', { name: /email verified/i })).toBeInTheDocument();
     expect(authService.verifyEmail).toHaveBeenCalledTimes(1);
     expect(authService.verifyEmail).toHaveBeenCalledWith('verify-123');
-    expect(screen.getByRole('link', { name: /continue to sign in/i })).toHaveAttribute('href', '/login');
+    expect(screen.getByRole('link', { name: /continue to sign in/i })).toHaveAttribute('href', '/auth/login');
   });
 
   it('shows the server reason when verification fails', async () => {
@@ -685,7 +685,7 @@ describe('Session handling', () => {
 
     await user.click(screen.getByRole('button', { name: /log out/i }));
 
-    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/login'));
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/auth/login'));
     expect(screen.getByText('signed-out')).toBeInTheDocument();
     expect(queryClient.getQueryData(['targets'])).toBeUndefined();
   });
@@ -718,7 +718,7 @@ describe('Session handling', () => {
     );
 
     await waitFor(() =>
-      expect(nav.replace).toHaveBeenCalledWith('/login?next=%2Ffindings%2Ff-42%3Ftab%3Devidence'),
+      expect(nav.replace).toHaveBeenCalledWith('/auth/login?next=%2Ffindings%2Ff-42%3Ftab%3Devidence'),
     );
     expect(screen.queryByText('secret dashboard')).not.toBeInTheDocument();
   });
