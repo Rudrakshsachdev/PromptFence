@@ -94,7 +94,7 @@ function VerifyEmailContent() {
           Your email address has been confirmed. You can now sign in to your PromptFence workspace.
         </p>
         <div className="mt-7 w-full">
-          <Link href="/login" className={authButtonClasses('primary')}>
+          <Link href="/auth/login" className={authButtonClasses('primary')}>
             <span>Continue to sign in</span>
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Link>
@@ -116,7 +116,7 @@ function VerifyEmailContent() {
         Links expire and can only be used once. If you already verified, simply sign in.
       </p>
       <div className="mt-7 w-full">
-        <Link href="/login" className={authButtonClasses('outline')}>
+        <Link href="/auth/login" className={authButtonClasses('outline')}>
           <span>Go to sign in</span>
         </Link>
       </div>

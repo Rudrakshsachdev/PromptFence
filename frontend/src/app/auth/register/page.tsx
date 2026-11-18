@@ -99,7 +99,7 @@ export default function RegisterPage() {
             can sign in to your security testing lab now.
           </p>
           <div className="mt-7 w-full">
-            <Link href="/login" className={authButtonClasses('primary')}>
+            <Link href="/auth/login" className={authButtonClasses('primary')}>
               <span>Continue to sign in</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
@@ -184,7 +184,7 @@ export default function RegisterPage() {
 
       <p className="mt-6 border-t border-neutral-100 pt-5 text-center text-[13px] text-neutral-600">
         Already have an account?{' '}
-        <Link href="/login" className="font-semibold text-neutral-950 hover:underline">
+        <Link href="/auth/login" className="font-semibold text-neutral-950 hover:underline">
           Sign in
         </Link>
       </p>

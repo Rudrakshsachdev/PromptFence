@@ -7,8 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import RegisterPage from '@/app/(auth)/register/page';
-import LoginPage from '@/app/(auth)/login/page';
+import RegisterPage from '@/app/auth/register/page';
+import LoginPage from '@/app/auth/login/page';
 import { AuthProvider } from '@/providers/auth-provider';
 
 const respond = (status: number, body: unknown) =>

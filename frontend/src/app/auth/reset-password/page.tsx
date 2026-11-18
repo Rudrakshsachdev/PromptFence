@@ -39,7 +39,7 @@ const resetPasswordSchema = z
 type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 const requestNewLink = (
-  <Link href="/forgot-password" className="font-semibold text-neutral-950 underline underline-offset-2">
+  <Link href="/auth/forgot-password" className="font-semibold text-neutral-950 underline underline-offset-2">
     request a new one
   </Link>
 );
@@ -82,7 +82,7 @@ function ResetPasswordForm() {
       toast.success('Password updated successfully! Please sign in.');
       // replace(): the single-use token URL should not stay in history, and the
       // form stays locked so the consumed token cannot be submitted twice.
-      router.replace('/login');
+      router.replace('/auth/login');
     } catch (err: unknown) {
       setFormError({
         message: getErrorMessage(err, 'Failed to reset password. Please try again.'),
@@ -161,7 +161,7 @@ function ResetPasswordForm() {
 
       <div className="mt-6 border-t border-neutral-100 pt-5 text-center">
         <Link
-          href="/login"
+          href="/auth/login"
           className="inline-flex items-center gap-1.5 text-[13px] font-medium text-neutral-600 hover:text-neutral-950 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />

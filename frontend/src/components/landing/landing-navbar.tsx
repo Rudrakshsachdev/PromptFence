@@ -82,13 +82,13 @@ export function LandingNavbar() {
           ) : (
             <>
               <Link
-                href="/login"
+                href="/auth/login"
                 className="text-[14px] font-medium text-neutral-600 transition-colors hover:text-neutral-950"
               >
                 Login
               </Link>
               <Link
-                href="/login"
+                href="/auth/login"
                 className="inline-flex h-9 items-center gap-1.5 rounded-md bg-neutral-950 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
               >
                 <span>Get Started</span>
@@ -162,14 +162,14 @@ export function LandingNavbar() {
               ) : (
                 <div className="flex flex-col gap-2">
                   <Link
-                    href="/login"
+                    href="/auth/login"
                     className="flex w-full items-center justify-center gap-2 rounded-md border border-neutral-200 bg-white py-2 text-xs font-semibold text-neutral-900"
                   >
                     <LogIn className="h-3.5 w-3.5" />
                     <span>Login</span>
                   </Link>
                   <Link
-                    href="/login"
+                    href="/auth/login"
                     className="flex w-full items-center justify-center gap-2 rounded-md bg-neutral-950 py-2 text-xs font-semibold text-white"
                   >
                     <span>Get Started</span>

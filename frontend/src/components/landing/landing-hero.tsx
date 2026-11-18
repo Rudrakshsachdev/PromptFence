@@ -110,7 +110,7 @@ export function LandingHero() {
           <span>Explore Platform</span>
         </Link>
         <Link
-          href={isAuthenticated ? '/overview' : '/login'}
+          href={isAuthenticated ? '/overview' : '/auth/login'}
           className="w-full sm:w-auto inline-flex h-12 items-center justify-center rounded-lg border border-neutral-200 bg-white px-8 text-sm font-semibold text-neutral-700 shadow-2xs transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
         >
           <span>{isAuthenticated ? 'Go to Dashboard' : 'Login to PromptFence'}</span>

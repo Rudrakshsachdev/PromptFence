@@ -150,7 +150,7 @@ export default function LoginPage() {
 
         <div className="flex items-center justify-end pt-0.5">
           <Link
-            href="/forgot-password"
+            href="/auth/forgot-password"
             className="rounded-sm text-[13px] font-medium text-neutral-600 hover:text-neutral-950 transition-colors underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950 focus-visible:ring-offset-2"
           >
             Forgot password?
@@ -226,7 +226,7 @@ export default function LoginPage() {
       {/* Footer navigation */}
       <p className="mt-6 border-t border-neutral-100 pt-5 text-center text-[13px] text-neutral-600">
         Don&apos;t have an account?{' '}
-        <Link href="/register" className="font-semibold text-neutral-950 hover:underline">
+        <Link href="/auth/register" className="font-semibold text-neutral-950 hover:underline">
           Create an account
         </Link>
       </p>

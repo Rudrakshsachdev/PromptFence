@@ -20,9 +20,18 @@ describe('getSafeRedirect', () => {
     ['/\\evil.example'],
     ['/%0d%0aSet-Cookie'.replace('%0d%0a', '\r\n')],
     ['javascript:alert(1)'],
+    ['/auth/login'],
+    ['/auth/login?next=/auth/login'],
+    ['/auth/register'],
+    ['/auth/signup'],
+    ['/auth/forgot-password'],
+    ['/auth/reset-password?token=abc'],
+    ['/auth/verify-email?token=abc'],
     ['/login'],
     ['/login?next=/login'],
     ['/register'],
+    ['/signup'],
+    ['/forgot-password'],
     ['/reset-password?token=abc'],
     ['/verify-email?token=abc'],
   ])('falls back to the dashboard for %j', (input) => {
@@ -32,11 +41,11 @@ describe('getSafeRedirect', () => {
 
 describe('buildLoginUrl', () => {
   it('encodes the return path', () => {
-    expect(buildLoginUrl('/findings/f-1?tab=evidence')).toBe('/login?next=%2Ffindings%2Ff-1%3Ftab%3Devidence');
+    expect(buildLoginUrl('/findings/f-1?tab=evidence')).toBe('/auth/login?next=%2Ffindings%2Ff-1%3Ftab%3Devidence');
   });
 
   it('omits next when it would be the default destination anyway', () => {
-    expect(buildLoginUrl('/overview')).toBe('/login');
-    expect(buildLoginUrl('//evil.example')).toBe('/login');
+    expect(buildLoginUrl('/overview')).toBe('/auth/login');
+    expect(buildLoginUrl('//evil.example')).toBe('/auth/login');
   });
 });

@@ -21,7 +21,7 @@ export function LandingCta() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
           <Link
-            href={isAuthenticated ? '/overview' : '/login'}
+            href={isAuthenticated ? '/overview' : '/auth/login'}
             className="w-full sm:w-auto inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-neutral-950 px-7 text-xs font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-950"
           >
             <span>{isAuthenticated ? 'Open Dashboard' : 'Login to PromptFence'}</span>
