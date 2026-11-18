@@ -10,7 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies.auth import get_current_user
 from app.dependencies.database import get_db
 from app.dependencies.pagination import PaginationParams, get_pagination_params
+from app.dependencies.permissions import require_permission
 from app.models.user import User
+from app.permissions.roles import PermissionType
 from app.repositories.role_repository import RoleRepository
 from app.schemas.common import SuccessResponse
 from app.schemas.test_suite import (
@@ -32,7 +34,11 @@ async def _get_user_roles(user: User, db: AsyncSession) -> list[str]:
     return [r.role.name for r in roles if r.role]
 
 
-@router.get("", response_model=TestSuiteListResponse)
+@router.get(
+    "",
+    response_model=TestSuiteListResponse,
+    dependencies=[Depends(require_permission(PermissionType.TEST_SUITES_READ))],
+)
 async def list_test_suites(
     pagination: Annotated[PaginationParams, Depends(get_pagination_params)],
     current_user: Annotated[User, Depends(get_current_user)],
@@ -67,7 +73,12 @@ async def list_test_suites(
     )
 
 
-@router.post("", response_model=TestSuiteResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=TestSuiteResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission(PermissionType.TEST_SUITES_WRITE))],
+)
 async def create_test_suite(
     data: TestSuiteCreate,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -88,7 +99,11 @@ async def create_test_suite(
     )
 
 
-@router.get("/{suite_id}", response_model=TestSuiteResponse)
+@router.get(
+    "/{suite_id}",
+    response_model=TestSuiteResponse,
+    dependencies=[Depends(require_permission(PermissionType.TEST_SUITES_READ))],
+)
 async def get_test_suite(
     suite_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -110,7 +125,11 @@ async def get_test_suite(
     )
 
 
-@router.patch("/{suite_id}", response_model=TestSuiteResponse)
+@router.patch(
+    "/{suite_id}",
+    response_model=TestSuiteResponse,
+    dependencies=[Depends(require_permission(PermissionType.TEST_SUITES_WRITE))],
+)
 async def update_test_suite(
     suite_id: uuid.UUID,
     data: TestSuiteUpdate,
@@ -136,7 +155,11 @@ async def update_test_suite(
     )
 
 
-@router.delete("/{suite_id}", response_model=SuccessResponse)
+@router.delete(
+    "/{suite_id}",
+    response_model=SuccessResponse,
+    dependencies=[Depends(require_permission(PermissionType.TEST_SUITES_DELETE))],
+)
 async def delete_test_suite(
     suite_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -149,7 +172,12 @@ async def delete_test_suite(
     return SuccessResponse(message="Test suite deleted successfully")
 
 
-@router.post("/{suite_id}/scenarios", response_model=SuccessResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{suite_id}/scenarios",
+    response_model=SuccessResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission(PermissionType.TEST_SUITES_WRITE))],
+)
 async def add_scenario_to_suite(
     suite_id: uuid.UUID,
     data: AddScenarioRequest,
@@ -169,7 +197,11 @@ async def add_scenario_to_suite(
     return SuccessResponse(message="Scenario added to test suite successfully")
 
 
-@router.delete("/{suite_id}/scenarios/{scenario_id}", response_model=SuccessResponse)
+@router.delete(
+    "/{suite_id}/scenarios/{scenario_id}",
+    response_model=SuccessResponse,
+    dependencies=[Depends(require_permission(PermissionType.TEST_SUITES_WRITE))],
+)
 async def remove_scenario_from_suite(
     suite_id: uuid.UUID,
     scenario_id: uuid.UUID,
@@ -183,7 +215,11 @@ async def remove_scenario_from_suite(
     return SuccessResponse(message="Scenario removed from test suite successfully")
 
 
-@router.patch("/{suite_id}/scenarios/order", response_model=SuccessResponse)
+@router.patch(
+    "/{suite_id}/scenarios/order",
+    response_model=SuccessResponse,
+    dependencies=[Depends(require_permission(PermissionType.TEST_SUITES_WRITE))],
+)
 async def reorder_scenarios_in_suite(
     suite_id: uuid.UUID,
     data: ReorderScenariosRequest,

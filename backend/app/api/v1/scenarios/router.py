@@ -10,8 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies.auth import get_current_user
 from app.dependencies.database import get_db
 from app.dependencies.pagination import PaginationParams, get_pagination_params
+from app.dependencies.permissions import require_permission
 from app.models.test_case import TestCaseCategory, TestCaseSeverity
 from app.models.user import User
+from app.permissions.roles import PermissionType
 from app.repositories.role_repository import RoleRepository
 from app.schemas.common import SuccessResponse
 from app.schemas.test_case import (
@@ -32,7 +34,11 @@ async def _get_user_roles(user: User, db: AsyncSession) -> list[str]:
     return [r.role.name for r in roles if r.role]
 
 
-@router.get("", response_model=TestCaseListResponse)
+@router.get(
+    "",
+    response_model=TestCaseListResponse,
+    dependencies=[Depends(require_permission(PermissionType.SCENARIOS_READ))],
+)
 async def list_scenarios(
     pagination: Annotated[PaginationParams, Depends(get_pagination_params)],
     current_user: Annotated[User, Depends(get_current_user)],
@@ -62,7 +68,12 @@ async def list_scenarios(
     )
 
 
-@router.post("", response_model=TestCaseResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=TestCaseResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission(PermissionType.SCENARIOS_WRITE))],
+)
 async def create_scenario(
     data: TestCaseCreate,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -74,7 +85,11 @@ async def create_scenario(
     return TestCaseResponse.model_validate(tc)
 
 
-@router.get("/{scenario_id}", response_model=TestCaseResponse)
+@router.get(
+    "/{scenario_id}",
+    response_model=TestCaseResponse,
+    dependencies=[Depends(require_permission(PermissionType.SCENARIOS_READ))],
+)
 async def get_scenario(
     scenario_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -87,7 +102,11 @@ async def get_scenario(
     return TestCaseResponse.model_validate(tc)
 
 
-@router.patch("/{scenario_id}", response_model=TestCaseResponse)
+@router.patch(
+    "/{scenario_id}",
+    response_model=TestCaseResponse,
+    dependencies=[Depends(require_permission(PermissionType.SCENARIOS_WRITE))],
+)
 async def update_scenario(
     scenario_id: uuid.UUID,
     data: TestCaseUpdate,
@@ -103,7 +122,11 @@ async def update_scenario(
     return TestCaseResponse.model_validate(tc)
 
 
-@router.delete("/{scenario_id}", response_model=SuccessResponse)
+@router.delete(
+    "/{scenario_id}",
+    response_model=SuccessResponse,
+    dependencies=[Depends(require_permission(PermissionType.SCENARIOS_DELETE))],
+)
 async def delete_scenario(
     scenario_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -116,7 +139,11 @@ async def delete_scenario(
     return SuccessResponse(message="Scenario deleted successfully")
 
 
-@router.patch("/{scenario_id}/status", response_model=TestCaseResponse)
+@router.patch(
+    "/{scenario_id}/status",
+    response_model=TestCaseResponse,
+    dependencies=[Depends(require_permission(PermissionType.SCENARIOS_WRITE))],
+)
 async def update_scenario_status(
     scenario_id: uuid.UUID,
     data: TestCaseStatusUpdate,
@@ -130,7 +157,10 @@ async def update_scenario_status(
     return TestCaseResponse.model_validate(tc)
 
 
-@router.post("/{scenario_id}/validate")
+@router.post(
+    "/{scenario_id}/validate",
+    dependencies=[Depends(require_permission(PermissionType.SCENARIOS_READ))],
+)
 async def validate_scenario(
     scenario_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -156,7 +186,10 @@ async def validate_scenario(
     }
 
 
-@router.get("/{scenario_id}/capabilities")
+@router.get(
+    "/{scenario_id}/capabilities",
+    dependencies=[Depends(require_permission(PermissionType.SCENARIOS_READ))],
+)
 async def get_scenario_capabilities(
     scenario_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],

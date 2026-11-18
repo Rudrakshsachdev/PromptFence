@@ -6,18 +6,29 @@ import { usePathname } from 'next/navigation';
 import { LogOut, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { Logo } from '@/components/shared/logo';
 import { SimpleTooltip } from '@/components/ui/tooltip';
-import { getActiveNavHref, NAVIGATION_SECTIONS } from '@/constants/navigation';
+import {
+  ALL_NAV_ITEMS,
+  getActiveNavHref,
+  NAVIGATION_SECTIONS,
+  RESEARCHER_NAV_ITEMS,
+  RESEARCHER_NAVIGATION_SECTIONS,
+} from '@/constants/navigation';
 import { useAuth } from '@/hooks/use-auth';
+import { getHomeRoute, usesResearcherWorkspace } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/providers/sidebar-provider';
 
 function NavLinks({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const pathname = usePathname();
-  const activeHref = getActiveNavHref(pathname);
+  const { user } = useAuth();
+  // Navigation follows the role returned by /auth/me (never the email or a UI label).
+  const researcher = usesResearcherWorkspace(user);
+  const sections = researcher ? RESEARCHER_NAVIGATION_SECTIONS : NAVIGATION_SECTIONS;
+  const activeHref = getActiveNavHref(pathname, researcher ? RESEARCHER_NAV_ITEMS : ALL_NAV_ITEMS);
 
   return (
     <nav aria-label="Primary" className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
-      {NAVIGATION_SECTIONS.map((section, sIdx) => (
+      {sections.map((section, sIdx) => (
         <div key={section.title} className={cn(sIdx > 0 && 'mt-5')}>
           {collapsed ? (
             sIdx > 0 && <div className="mx-1.5 mb-4 h-px bg-border" aria-hidden />
@@ -123,6 +134,8 @@ function UserFooter({ collapsed }: { collapsed: boolean }) {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const homeHref = getHomeRoute(user);
   const { isCollapsed, toggleCollapse, isMobileOpen, setMobileOpen } = useSidebar();
 
   // Close the mobile drawer on navigation and on Escape.
@@ -152,7 +165,7 @@ export function Sidebar() {
             isCollapsed ? 'justify-center px-2' : 'justify-between pl-4 pr-3',
           )}
         >
-          <Logo collapsed={isCollapsed} />
+          <Logo collapsed={isCollapsed} href={homeHref} />
           {!isCollapsed && (
             <SimpleTooltip label="Collapse sidebar" side="right">
               <button
@@ -193,7 +206,7 @@ export function Sidebar() {
           />
           <aside className="absolute inset-y-0 left-0 flex w-[272px] max-w-[85vw] flex-col border-r border-border bg-sidebar shadow-overlay animate-in slide-in-from-left duration-200">
             <div className="flex h-16 shrink-0 items-center justify-between border-b border-border pl-4 pr-3">
-              <Logo />
+              <Logo href={homeHref} />
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}

@@ -1,5 +1,7 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-auth';
+import { PERMISSIONS } from '@/constants/permissions';
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -50,6 +52,7 @@ const RUN_SAMPLE = 100;
 const scenarioCount = (s: TestSuite) => s.scenario_count ?? s.suite_test_cases?.length ?? 0;
 
 export default function TestSuitesPage() {
+  const { can } = usePermissions();
   const router = useRouter();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -166,29 +169,37 @@ export default function TestSuitesPage() {
                   <ExternalLink /> Open
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/test-suites/${s.id}/edit`}>
-                  <Pencil /> Edit details
-                </Link>
-              </DropdownMenuItem>
+              {can(PERMISSIONS.testSuitesWrite) && (
+                <DropdownMenuItem asChild>
+                  <Link href={`/test-suites/${s.id}/edit`}>
+                    <Pencil /> Edit details
+                  </Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem asChild>
                 <Link href="/test-runs/new">
                   <Play /> Launch test run
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={toggleStatus.isPending}
-                onSelect={() => toggleStatus.mutate({ id: s.id, isActive: !s.is_active })}
-              >
-                <Power /> {s.is_active ? 'Disable' : 'Enable'}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => setSuiteToDelete(s)}
-                className="text-critical focus:text-critical [&_svg]:text-critical"
-              >
-                <Trash2 /> Delete
-              </DropdownMenuItem>
+              {can(PERMISSIONS.testSuitesWrite) && (
+                <DropdownMenuItem
+                  disabled={toggleStatus.isPending}
+                  onSelect={() => toggleStatus.mutate({ id: s.id, isActive: !s.is_active })}
+                >
+                  <Power /> {s.is_active ? 'Disable' : 'Enable'}
+                </DropdownMenuItem>
+              )}
+              {can(PERMISSIONS.testSuitesDelete) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => setSuiteToDelete(s)}
+                    className="text-critical focus:text-critical [&_svg]:text-critical"
+                  >
+                    <Trash2 /> Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -205,11 +216,13 @@ export default function TestSuitesPage() {
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
           <RefreshCw className={`h-3.5 w-3.5 ${isRefetching ? 'animate-spin' : ''}`} /> Refresh
         </Button>
-        <Button asChild size="sm">
-          <Link href="/test-suites/new">
-            <Plus className="h-3.5 w-3.5" /> Create suite
-          </Link>
-        </Button>
+        {can(PERMISSIONS.testSuitesWrite) && (
+          <Button asChild size="sm">
+            <Link href="/test-suites/new">
+              <Plus className="h-3.5 w-3.5" /> Create suite
+            </Link>
+          </Button>
+        )}
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -292,8 +305,8 @@ export default function TestSuitesPage() {
                 icon={Layers}
                 title="No test suites yet"
                 description="Create a suite, then assign scenarios from the library to build a repeatable evaluation."
-                actionText="Create suite"
-                actionHref="/test-suites/new"
+                actionText={can(PERMISSIONS.testSuitesWrite) ? 'Create suite' : undefined}
+                actionHref={can(PERMISSIONS.testSuitesWrite) ? '/test-suites/new' : undefined}
               />
             )
           }

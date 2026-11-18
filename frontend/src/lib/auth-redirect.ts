@@ -26,10 +26,15 @@ export function getSafeRedirect(next: string | null | undefined): string {
   return next;
 }
 
-/** Read and validate the `next` parameter from the current URL (client only). */
-export function getRedirectFromLocation(): string {
-  if (typeof window === 'undefined') return DEFAULT_AUTHENTICATED_ROUTE;
-  return getSafeRedirect(new URLSearchParams(window.location.search).get('next'));
+/**
+ * The validated `next` destination from the current URL, or null when none (or
+ * an unsafe one) was requested, so the caller can fall back to the user's
+ * role-specific home (client only).
+ */
+export function getRedirectFromLocation(): string | null {
+  if (typeof window === 'undefined') return null;
+  const next = new URLSearchParams(window.location.search).get('next');
+  return next && getSafeRedirect(next) === next ? next : null;
 }
 
 /** Build the sign-in URL that returns the user to `path` afterwards. */

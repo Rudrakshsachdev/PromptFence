@@ -9,6 +9,8 @@ import {
   LayoutDashboard,
   Layers,
   LibraryBig,
+  Radar,
+  ShieldCheck,
   Scale,
   ScrollText,
   Settings,
@@ -147,12 +149,92 @@ export const NAVIGATION_SECTIONS: NavSection[] = [
 export const ALL_NAV_ITEMS: NavItem[] = NAVIGATION_SECTIONS.flatMap((s) => s.items);
 
 /**
+ * Security researcher workspace navigation. Organised around the assessment
+ * workflow (assess -> investigate -> report); no administrative entries. The
+ * items reuse the shared feature modules, so deep links stay inside this nav.
+ */
+export const RESEARCHER_NAVIGATION_SECTIONS: NavSection[] = [
+  {
+    title: 'Assess',
+    items: [
+      {
+        title: 'Security Overview',
+        href: '/security/researcher',
+        icon: ShieldCheck,
+        description: 'Security posture, open risk and what to investigate next',
+      },
+      {
+        title: 'Targets',
+        href: '/targets',
+        icon: Crosshair,
+        description: 'LLM, agent and HTTP endpoints under assessment',
+      },
+      {
+        title: 'Security Assessments',
+        href: '/security/researcher/assessments',
+        icon: Radar,
+        description: 'Launch assessments and monitor their progress',
+        match: ['/test-runs/new', '/test-suites', '/scenarios'],
+      },
+      {
+        title: 'Test Executions',
+        href: '/test-runs',
+        icon: Activity,
+        description: 'Execution history, traces and per-case results',
+      },
+    ],
+  },
+  {
+    title: 'Investigate',
+    items: [
+      {
+        title: 'Findings & Vulnerabilities',
+        href: '/findings',
+        icon: ShieldAlert,
+        description: 'Triage vulnerabilities by severity, category and status',
+      },
+      {
+        title: 'Attack Evidence',
+        href: '/provenance',
+        icon: Fingerprint,
+        description: 'Canary observations, provenance and attribution',
+      },
+      {
+        title: 'Regression Testing',
+        href: '/regression',
+        icon: GitCompareArrows,
+        description: 'New, recurring and resolved findings across executions',
+      },
+    ],
+  },
+  {
+    title: 'Report',
+    items: [
+      {
+        title: 'Security Analytics',
+        href: '/analytics',
+        icon: BarChart3,
+        description: 'Trends, distributions and per-target comparisons',
+      },
+      {
+        title: 'Security Reports',
+        href: '/reports',
+        icon: FileText,
+        description: 'Evidence reports and exports',
+      },
+    ],
+  },
+];
+
+export const RESEARCHER_NAV_ITEMS: NavItem[] = RESEARCHER_NAVIGATION_SECTIONS.flatMap((s) => s.items);
+
+/**
  * Resolves the active nav item by longest matching prefix, so nested routes
  * (e.g. /evaluation/experiments/…) activate the most specific entry.
  */
-export function getActiveNavHref(pathname: string): string | null {
+export function getActiveNavHref(pathname: string, items: NavItem[] = ALL_NAV_ITEMS): string | null {
   let best: { href: string; length: number } | null = null;
-  for (const item of ALL_NAV_ITEMS) {
+  for (const item of items) {
     for (const prefix of [item.href, ...(item.match ?? [])]) {
       if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
         if (!best || prefix.length > best.length) best = { href: item.href, length: prefix.length };
@@ -165,6 +247,9 @@ export function getActiveNavHref(pathname: string): string | null {
 /** Human labels for URL segments, used by breadcrumbs. */
 export const SEGMENT_LABELS: Record<string, string> = {
   overview: 'Overview',
+  security: 'Security',
+  researcher: 'Researcher workspace',
+  assessments: 'Assessments',
   targets: 'Targets',
   'test-suites': 'Test Suites',
   scenarios: 'Scenarios',

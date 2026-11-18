@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.execution import FindingSeverity, FindingStatusHistory, TaintFinding
+from app.models.execution import FindingSeverity, FindingStatusHistory, TaintFinding, TestRun
 
 VALID_STATUSES = {"OPEN", "ACKNOWLEDGED", "RESOLVED", "FALSE_POSITIVE", "ACCEPTED_RISK"}
 ALLOWED_TRANSITIONS = {
@@ -29,7 +29,7 @@ _SEVERITY_RANK = case(
 
 async def list_findings(
     db: AsyncSession, *, page: int, page_size: int, status=None, severity=None,
-    category=None, test_run_id=None, detection_method=None, search=None,
+    category=None, test_run_id=None, target_id=None, detection_method=None, search=None,
     date_from: datetime | None = None, date_to: datetime | None = None, sort: str = "newest",
 ):
     stmt = select(TaintFinding)
@@ -41,6 +41,11 @@ async def list_findings(
         stmt = stmt.where(TaintFinding.category == category)
     if test_run_id:
         stmt = stmt.where(TaintFinding.test_run_id == test_run_id)
+    if target_id:
+        # Subquery (not a join) so each finding appears once and counts stay exact.
+        stmt = stmt.where(
+            TaintFinding.test_run_id.in_(select(TestRun.id).where(TestRun.target_id == target_id))
+        )
     if detection_method:
         stmt = stmt.where(TaintFinding.detection_method == detection_method)
     if date_from:

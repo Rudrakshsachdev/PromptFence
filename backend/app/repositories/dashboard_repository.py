@@ -3,7 +3,7 @@
 import uuid
 from typing import TypeVar
 
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, ScalarSelect, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.target import Target
@@ -22,7 +22,10 @@ class DashboardRepository:
     async def owner_counts(self, owner_id: uuid.UUID) -> dict[str, int]:
         """All overview counters for one owner in a single statement."""
 
-        def count(model: type[Target] | type[TestSuite] | type[TestCase], *conditions):  # noqa: ANN202
+        def count(
+            model: type[Target] | type[TestSuite] | type[TestCase],
+            *conditions: ColumnElement[bool],
+        ) -> ScalarSelect[int]:
             return (
                 select(func.count())
                 .select_from(model)

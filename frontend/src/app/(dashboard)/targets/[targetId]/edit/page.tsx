@@ -1,5 +1,7 @@
 'use client';
 
+import { RequirePermission } from '@/components/shared/require-permission';
+import { PERMISSIONS } from '@/constants/permissions';
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Crosshair, SearchX } from 'lucide-react';
@@ -13,7 +15,7 @@ import { ApiError } from '@/lib/api-client';
 import { formatDate } from '@/lib/utils';
 import { TargetForm, type TargetFormPayload } from '../../_components/target-form';
 
-export default function EditTargetPage() {
+function EditTargetPageContent() {
   const params = useParams();
   const targetId = params.targetId as string;
   const router = useRouter();
@@ -85,5 +87,13 @@ export default function EditTargetPage() {
         onSubmit={handleSubmit}
       />
     </div>
+  );
+}
+
+export default function EditTargetPage() {
+  return (
+    <RequirePermission permission={PERMISSIONS.targetsWrite} backHref="/targets" backLabel="Back to targets">
+      <EditTargetPageContent />
+    </RequirePermission>
   );
 }

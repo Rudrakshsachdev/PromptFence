@@ -1,5 +1,7 @@
 'use client';
 
+import { RequirePermission } from '@/components/shared/require-permission';
+import { PERMISSIONS } from '@/constants/permissions';
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Layers } from 'lucide-react';
@@ -7,7 +9,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { useCreateTestSuite } from '@/hooks/use-test-suites';
 import { SuiteForm, type SuiteFormValues } from '../_components/suite-form';
 
-export default function NewTestSuitePage() {
+function NewTestSuitePageContent() {
   const router = useRouter();
   const createMutation = useCreateTestSuite();
 
@@ -34,5 +36,13 @@ export default function NewTestSuitePage() {
         onSubmit={onSubmit}
       />
     </div>
+  );
+}
+
+export default function NewTestSuitePage() {
+  return (
+    <RequirePermission permission={PERMISSIONS.testSuitesWrite} backHref="/test-suites" backLabel="Back to test suites">
+      <NewTestSuitePageContent />
+    </RequirePermission>
   );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { RequirePermission } from '@/components/shared/require-permission';
+import { PERMISSIONS } from '@/constants/permissions';
 import React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Layers, SearchX } from 'lucide-react';
@@ -11,7 +13,7 @@ import { useTestSuite, useUpdateTestSuite } from '@/hooks/use-test-suites';
 import { ApiError } from '@/lib/api-client';
 import { SuiteForm, type SuiteFormValues } from '../../_components/suite-form';
 
-export default function EditTestSuitePage() {
+function EditTestSuitePageContent() {
   const params = useParams();
   const suiteId = params.suiteId as string;
   const router = useRouter();
@@ -61,5 +63,13 @@ export default function EditTestSuitePage() {
         onSubmit={onSubmit}
       />
     </div>
+  );
+}
+
+export default function EditTestSuitePage() {
+  return (
+    <RequirePermission permission={PERMISSIONS.testSuitesWrite} backHref="/test-suites" backLabel="Back to test suites">
+      <EditTestSuitePageContent />
+    </RequirePermission>
   );
 }

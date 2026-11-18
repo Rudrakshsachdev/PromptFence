@@ -51,6 +51,9 @@ const USER = {
   roles: ['security_researcher'],
 };
 
+const ADMIN_USER = { ...USER, id: 'u-admin', email: 'admin@promptfence.internal', roles: ['admin'] };
+const VIEWER_USER = { ...USER, id: 'u-viewer', email: 'viewer@promptfence.internal', roles: ['viewer'] };
+
 const VALID_PASSWORD = 'ValidPass123!';
 
 function renderWithAuth(ui: React.ReactElement) {
@@ -230,7 +233,7 @@ describe('Login page', () => {
     await act(async () => pending.reject(new ApiError('Invalid email or password', 401)));
   });
 
-  it('signs in, redirects to the dashboard and stays locked while navigating', async () => {
+  it('signs a researcher in to the researcher workspace and stays locked while navigating', async () => {
     authService.login.mockResolvedValue({ access_token: 'token' });
     renderWithAuth(<LoginPage />);
     const user = await fillLogin('lead@example.com', VALID_PASSWORD);
@@ -238,7 +241,7 @@ describe('Login page', () => {
 
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/overview'));
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/security/researcher'));
     expect(authService.login).toHaveBeenCalledWith({ email: 'lead@example.com', password: VALID_PASSWORD });
     expect(toast.success).toHaveBeenCalledWith('Authenticated successfully');
     expect(screen.getByRole('button', { name: /signing in/i })).toBeDisabled();
@@ -265,7 +268,22 @@ describe('Login page', () => {
 
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/overview'));
+    // Unsafe target ignored: the researcher lands on their own workspace instead.
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/security/researcher'));
+  });
+
+  it.each([
+    ['admin', ADMIN_USER, '/overview'],
+    ['viewer', VIEWER_USER, '/overview'],
+  ])('signs an %s in to the shared dashboard', async (_role, account, home) => {
+    authService.login.mockResolvedValue({ access_token: 'token' });
+    renderWithAuth(<LoginPage />);
+    const user = await fillLogin('lead@example.com', VALID_PASSWORD);
+    authService.getMe.mockResolvedValue(account);
+
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith(home));
   });
 
   it('reports a login that did not produce a usable session instead of claiming success', async () => {
@@ -280,8 +298,15 @@ describe('Login page', () => {
     expect(nav.replace).not.toHaveBeenCalled();
   });
 
-  it('sends an already signed-in visitor straight to the dashboard', async () => {
+  it('sends an already signed-in visitor straight to their workspace', async () => {
     authService.getMe.mockResolvedValue(USER);
+    renderWithAuth(<LoginPage />);
+
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/security/researcher'));
+  });
+
+  it('sends an already signed-in admin to /overview', async () => {
+    authService.getMe.mockResolvedValue(ADMIN_USER);
     renderWithAuth(<LoginPage />);
 
     await waitFor(() => expect(nav.replace).toHaveBeenCalledWith('/overview'));

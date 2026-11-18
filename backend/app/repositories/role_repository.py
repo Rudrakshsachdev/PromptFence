@@ -71,6 +71,25 @@ class RoleRepository:
         )
         return list(result.scalars().all())
 
+    async def get_role_and_permission_names(
+        self, user_id: uuid.UUID
+    ) -> tuple[set[str], set[str]]:
+        """A user's role names and permission names in a single query."""
+        result = await self.db.execute(
+            select(Role.name, Permission.name)
+            .join(UserRole, UserRole.role_id == Role.id)
+            .outerjoin(RolePermission, RolePermission.role_id == Role.id)
+            .outerjoin(Permission, Permission.id == RolePermission.permission_id)
+            .where(UserRole.user_id == user_id)
+        )
+        roles: set[str] = set()
+        permissions: set[str] = set()
+        for role_name, permission_name in result.all():
+            roles.add(role_name)
+            if permission_name:
+                permissions.add(permission_name)
+        return roles, permissions
+
     async def get_user_permissions(self, user_id: uuid.UUID) -> list[str]:
         """Get all permission names for a user through their roles."""
         result = await self.db.execute(

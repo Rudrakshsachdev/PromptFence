@@ -26,6 +26,9 @@ class UserResponse(BaseModel):
     updated_at: datetime
     last_login_at: datetime | None = None
     roles: list[str] = []
+    # Effective permission names from the user's roles (for UI gating only;
+    # the API enforces them independently).
+    permissions: list[str] = []
 
     model_config = {"from_attributes": True}
 

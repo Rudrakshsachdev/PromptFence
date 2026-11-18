@@ -1,5 +1,7 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-auth';
+import { PERMISSIONS } from '@/constants/permissions';
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -50,6 +52,7 @@ const PAGE_SIZE = 25;
 const CLIENT_FILTER_LIMIT = 100;
 
 export default function ScenariosPage() {
+  const { can } = usePermissions();
   const router = useRouter();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim().toLowerCase(), 250);
@@ -172,7 +175,7 @@ export default function ScenariosPage() {
         <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           <Switch
             checked={s.is_enabled}
-            disabled={pendingId === s.id}
+            disabled={pendingId === s.id || !can(PERMISSIONS.scenariosWrite)}
             onCheckedChange={() => toggleStatus(s)}
             aria-label={`${s.is_enabled ? 'Disable' : 'Enable'} ${s.name}`}
           />
@@ -206,21 +209,29 @@ export default function ScenariosPage() {
                   <ExternalLink /> View details
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/scenarios/${s.id}/edit`}>
-                  <Pencil /> Edit
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toggleStatus(s)}>
-                <Power /> {s.is_enabled ? 'Disable' : 'Enable'}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => setToDelete(s)}
-                className="text-critical focus:text-critical [&_svg]:text-critical"
-              >
-                <Trash2 /> Delete
-              </DropdownMenuItem>
+              {can(PERMISSIONS.scenariosWrite) && (
+                <>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/scenarios/${s.id}/edit`}>
+                      <Pencil /> Edit
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => toggleStatus(s)}>
+                    <Power /> {s.is_enabled ? 'Disable' : 'Enable'}
+                  </DropdownMenuItem>
+                </>
+              )}
+              {can(PERMISSIONS.scenariosDelete) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => setToDelete(s)}
+                    className="text-critical focus:text-critical [&_svg]:text-critical"
+                  >
+                    <Trash2 /> Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -237,11 +248,13 @@ export default function ScenariosPage() {
         <Button variant="outline" size="sm" onClick={() => scenarios.refetch()} disabled={scenarios.isFetching}>
           <RefreshCw className={cn('h-3.5 w-3.5', scenarios.isFetching && 'animate-spin')} /> Refresh
         </Button>
-        <Button asChild size="sm">
-          <Link href="/scenarios/new">
-            <Plus className="h-3.5 w-3.5" /> New scenario
-          </Link>
-        </Button>
+        {can(PERMISSIONS.scenariosWrite) && (
+          <Button asChild size="sm">
+            <Link href="/scenarios/new">
+              <Plus className="h-3.5 w-3.5" /> New scenario
+            </Link>
+          </Button>
+        )}
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -398,8 +411,8 @@ export default function ScenariosPage() {
                   icon={LibraryBig}
                   title="No scenarios yet"
                   description="Create an adversarial scenario, then add it to a test suite to run it against a target."
-                  actionText="New scenario"
-                  actionHref="/scenarios/new"
+                  actionText={can(PERMISSIONS.scenariosWrite) ? 'New scenario' : undefined}
+                  actionHref={can(PERMISSIONS.scenariosWrite) ? '/scenarios/new' : undefined}
                 />
               )
             }

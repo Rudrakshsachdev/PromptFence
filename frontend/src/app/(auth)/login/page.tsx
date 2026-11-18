@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowRight, Terminal, Shield, Check, ShieldAlert } from 'lucide-react';
+import { ArrowRight, Terminal, Shield, Check, ShieldAlert, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   AuthAlert,
@@ -27,7 +27,8 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 /**
- * Local seed accounts (backend/scripts/seed.py) for development sign-in.
+ * Local development accounts, one per backend role (admin, security_researcher,
+ * viewer). Seeded by backend/scripts/seed.py and create_test_users.py.
  * Declared behind the NODE_ENV check so production bundles carry no credentials.
  */
 const SEED_ACCOUNTS =
@@ -35,17 +36,25 @@ const SEED_ACCOUNTS =
     ? [
         {
           role: 'Admin',
-          badge: 'Full Access',
+          badge: 'Full access',
           email: 'admin@promptfence.internal',
           password: 'AdminSecurePass123!',
           icon: ShieldAlert,
         },
         {
           role: 'Researcher',
-          badge: 'Security Lead',
+          badge: 'Read & write',
           email: 'researcher@promptfence.internal',
           password: 'ResearcherPass123!',
           icon: Shield,
+        },
+        {
+          // Created by backend/scripts/create_test_users.py (role: viewer)
+          role: 'Viewer',
+          badge: 'Read-only',
+          email: 'viewer@promptfence.internal',
+          password: 'ViewerPass123!',
+          icon: Eye,
         },
       ]
     : [];
@@ -176,7 +185,7 @@ export default function LoginPage() {
             <span className="text-[10.5px] font-medium text-neutral-500">Click to autofill</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-3">
             {SEED_ACCOUNTS.map((acct) => {
               const isSelected = selectedSeed === acct.role;
               return (

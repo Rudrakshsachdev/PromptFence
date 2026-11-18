@@ -34,6 +34,7 @@ async def list_all_findings(
     severity: FindingSeverity | None = Query(default=None),
     status: str | None = Query(default=None),
     test_run_id: uuid.UUID | None = Query(default=None),
+    target_id: uuid.UUID | None = Query(default=None),
     detection_method: str | None = Query(default=None),
     search: str | None = Query(default=None, max_length=200),
     date_from: datetime | None = Query(default=None),
@@ -43,7 +44,7 @@ async def list_all_findings(
     """List findings with search, filters and sorting."""
     items, total = await findings_service.list_findings(
         db, page=pagination.page, page_size=pagination.page_size, status=status,
-        severity=severity, category=category, test_run_id=test_run_id,
+        severity=severity, category=category, test_run_id=test_run_id, target_id=target_id,
         detection_method=detection_method, search=search,
         date_from=date_from, date_to=date_to, sort=sort,
     )

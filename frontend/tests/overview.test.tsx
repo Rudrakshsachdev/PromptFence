@@ -36,6 +36,11 @@ vi.mock('@/hooks/use-test-runs', () => ({ useTestRuns: hooks.useTestRuns }));
 vi.mock('@/hooks/use-findings', () => ({ useFindings: hooks.useFindings }));
 vi.mock('@/hooks/use-regression', () => ({ useComparisons: hooks.useComparisons }));
 
+const permissions = vi.hoisted(() => ({ granted: true }));
+vi.mock('@/hooks/use-auth', () => ({
+  usePermissions: () => ({ can: () => permissions.granted }),
+}));
+
 const rate = (numerator: number, denominator: number) => ({
   numerator,
   denominator,
@@ -45,6 +50,7 @@ const rate = (numerator: number, denominator: number) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  permissions.granted = true;
   hooks.useDashboardOverview.mockReturnValue(ok({ total_targets: 3, active_targets: 2 }));
   hooks.useDashboardActivity.mockReturnValue(ok({ activities: [] }));
   hooks.useAnalyticsOverview.mockReturnValue(
@@ -176,6 +182,15 @@ describe('Overview page', () => {
     expect(within(row).getByText('160.0%')).toBeInTheDocument();
     expect(within(row).getByText('20.0%')).toBeInTheDocument();
     expect(within(row).queryByText('16000.0%')).not.toBeInTheDocument();
+  });
+
+  it('hides "Register target" from users without targets:write', () => {
+    permissions.granted = false;
+    render(<OverviewPage />);
+
+    expect(screen.queryByRole('link', { name: /register target/i })).not.toBeInTheDocument();
+    // Read-only users still get everything they are allowed to see
+    expect(screen.getByRole('heading', { level: 1, name: 'Security overview' })).toBeInTheDocument();
   });
 
   it('keeps the primary actions', () => {

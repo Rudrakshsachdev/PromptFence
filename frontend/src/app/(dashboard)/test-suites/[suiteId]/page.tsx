@@ -1,5 +1,7 @@
 'use client';
 
+import { usePermissions } from '@/hooks/use-auth';
+import { PERMISSIONS } from '@/constants/permissions';
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
@@ -93,6 +95,7 @@ interface AssignedCase {
 }
 
 export default function TestSuiteDetailPage() {
+  const { can } = usePermissions();
   const params = useParams();
   const suiteId = params.suiteId as string;
   const router = useRouter();
@@ -241,6 +244,7 @@ export default function TestSuiteDetailPage() {
       header: <span className="sr-only">Actions</span>,
       align: 'right',
       cell: (a) => {
+        if (!can(PERMISSIONS.testSuitesWrite)) return null;
         const idx = assigned.findIndex((x) => x.id === a.id);
         const busy = pendingId === a.test_case_id;
         return (
@@ -365,41 +369,51 @@ export default function TestSuiteDetailPage() {
           </>
         }
       >
-        <Button variant="outline" size="sm" onClick={() => setIsAddOpen(true)}>
-          <Plus className="h-3.5 w-3.5" /> Assign scenarios
-        </Button>
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/test-suites/${suiteId}/edit`}>
-            <Pencil className="h-3.5 w-3.5" /> Edit
-          </Link>
-        </Button>
+        {can(PERMISSIONS.testSuitesWrite) && (
+          <Button variant="outline" size="sm" onClick={() => setIsAddOpen(true)}>
+            <Plus className="h-3.5 w-3.5" /> Assign scenarios
+          </Button>
+        )}
+        {can(PERMISSIONS.testSuitesWrite) && (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/test-suites/${suiteId}/edit`}>
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </Link>
+          </Button>
+        )}
         <Button asChild size="sm">
           <Link href="/test-runs/new">
             <Play className="h-3.5 w-3.5" /> Launch test run
           </Link>
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon-sm" aria-label="More actions">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem
-              disabled={updateMutation.isPending}
-              onSelect={() => updateMutation.mutate({ is_active: !suite.is_active })}
-            >
-              <Power /> {suite.is_active ? 'Disable suite' : 'Enable suite'}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => setDeleteOpen(true)}
-              className="text-critical focus:text-critical [&_svg]:text-critical"
-            >
-              <Trash2 /> Delete suite
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {(can(PERMISSIONS.testSuitesWrite) || can(PERMISSIONS.testSuitesDelete)) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon-sm" aria-label="More actions">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              {can(PERMISSIONS.testSuitesWrite) && (
+                <DropdownMenuItem
+                  disabled={updateMutation.isPending}
+                  onSelect={() => updateMutation.mutate({ is_active: !suite.is_active })}
+                >
+                  <Power /> {suite.is_active ? 'Disable suite' : 'Enable suite'}
+                </DropdownMenuItem>
+              )}
+              {can(PERMISSIONS.testSuitesWrite) && can(PERMISSIONS.testSuitesDelete) && <DropdownMenuSeparator />}
+              {can(PERMISSIONS.testSuitesDelete) && (
+                <DropdownMenuItem
+                  onSelect={() => setDeleteOpen(true)}
+                  className="text-critical focus:text-critical [&_svg]:text-critical"
+                >
+                  <Trash2 /> Delete suite
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </PageHeader>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -558,7 +572,7 @@ export default function TestSuiteDetailPage() {
                     ? 'No unassigned scenarios match.'
                     : 'The scenario library is empty.'}
                 </p>
-                {!scenarios.data?.items.length && (
+                {!scenarios.data?.items.length && can(PERMISSIONS.scenariosWrite) && (
                   <Button asChild size="sm" variant="outline" className="mt-3">
                     <Link href="/scenarios/new">Create scenario</Link>
                   </Button>

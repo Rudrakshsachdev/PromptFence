@@ -1,5 +1,12 @@
 """Pytest configuration and test fixtures."""
 
+import os
+
+# The rate limiter is process-wide and keys on the client IP, which is the same
+# for every test, so a full run would trip it and make results depend on test
+# order. Must be set before app settings are imported below.
+os.environ.setdefault("RATE_LIMIT_REQUESTS", "1000000")
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.pool import StaticPool
@@ -101,8 +108,16 @@ async def test_user(db_session: AsyncSession):
 async def client():
     """Provide an asynchronous HTTP test client for FastAPI routes."""
     async def override_get_db():
+        # Mirror app.dependencies.database.get_db: commit on success, roll back
+        # on error. Without the commit, anything created through the API
+        # vanished at the end of its request.
         async with test_async_session_factory() as session:
-            yield session
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
 
     app.dependency_overrides[get_db] = override_get_db
     transport = ASGITransport(app=app)
