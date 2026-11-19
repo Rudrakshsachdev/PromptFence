@@ -43,6 +43,8 @@ core_db.async_session_factory = test_async_session_factory
 orch_service.async_session_factory = test_async_session_factory
 seed_mod.engine = test_engine
 seed_mod.async_session_factory = test_async_session_factory
+import app.main as main_mod
+main_mod.engine = test_engine
 
 
 @pytest.fixture
@@ -58,6 +60,7 @@ async def setup_test_db():
     orch_service.async_session_factory = test_async_session_factory
     seed_mod.engine = test_engine
     seed_mod.async_session_factory = test_async_session_factory
+    main_mod.engine = test_engine
 
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

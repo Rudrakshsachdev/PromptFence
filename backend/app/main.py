@@ -1,30 +1,41 @@
 """PromptFence FastAPI main application entry point."""
 
 from contextlib import asynccontextmanager
+import logging
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.api.v1.router import v1_router
 from app.core.config import settings
-from app.core.database import Base, engine
+from app.core.database import Base, engine, engine_initialization_error
 from app.core.exceptions import AppError
 from app.core.logging import setup_logging
 from app.middleware import configure_middleware, internal_error_response
 
 # Initialize structured logging
 setup_logging()
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan context for startup and shutdown hooks."""
+    if engine is None:
+        error_msg = (
+            f"Database engine failed to initialize: {engine_initialization_error}. "
+            "Please ensure database drivers (e.g., asyncpg) are installed and DATABASE_URL is valid."
+        )
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+
     # In development/test with SQLite or local, create tables if needed
     if settings.is_development or settings.is_testing:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
     yield
-    await engine.dispose()
+    if engine is not None:
+        await engine.dispose()
 
 
 app = FastAPI(

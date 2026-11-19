@@ -320,13 +320,13 @@ describe('Login page', () => {
 
       await user.click(within(panel).getByRole('button', { name: /admin/i }));
 
-      expect(screen.getByLabelText(/email address/i)).toHaveValue('admin@promptfence.internal');
-      expect(screen.getByLabelText(/^password/i)).toHaveValue('AdminSecurePass123!');
+      expect(screen.getByLabelText(/email address/i)).toHaveValue('admin@promptfence.io');
+      expect(screen.getByLabelText(/^password/i)).toHaveValue('AdminPassword123!');
       expect(within(panel).getByRole('button', { name: /admin/i })).toHaveAttribute('aria-pressed', 'true');
 
       await user.click(within(panel).getByRole('button', { name: /researcher/i }));
-      expect(screen.getByLabelText(/email address/i)).toHaveValue('researcher@promptfence.internal');
-      expect(screen.getByLabelText(/^password/i)).toHaveValue('ResearcherPass123!');
+      expect(screen.getByLabelText(/email address/i)).toHaveValue('researcher@promptfence.io');
+      expect(screen.getByLabelText(/^password/i)).toHaveValue('ResearcherPassword123!');
       expect(within(panel).getByRole('button', { name: /admin/i })).toHaveAttribute('aria-pressed', 'false');
     });
 
@@ -338,7 +338,7 @@ describe('Login page', () => {
       await user.click(screen.getByRole('button', { name: 'Show password' }));
       const password = screen.getByLabelText(/^password/i);
       expect(password).toHaveAttribute('type', 'text');
-      expect(password).toHaveValue('AdminSecurePass123!');
+      expect(password).toHaveValue('AdminPassword123!');
     });
 
     it('drops the selected marker once the credentials are edited', async () => {
@@ -362,8 +362,8 @@ describe('Login page', () => {
 
       await waitFor(() =>
         expect(authService.login).toHaveBeenCalledWith({
-          email: 'researcher@promptfence.internal',
-          password: 'ResearcherPass123!',
+          email: 'researcher@promptfence.io',
+          password: 'ResearcherPassword123!',
         }),
       );
     });

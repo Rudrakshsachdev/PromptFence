@@ -31,10 +31,18 @@ try:
         return _ph.hash(password)
 
     def verify_password(password: str, password_hash: str) -> bool:
-        """Verify a password against an Argon2id hash."""
+        """Verify a password against an Argon2id or bcrypt hash."""
+        if not password_hash or not password:
+            return False
+        if password_hash.startswith(("$2a$", "$2b$", "$2y$")):
+            try:
+                import bcrypt
+                return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
+            except Exception:
+                return False
         try:
             return _ph.verify(password_hash, password)
-        except (VerifyMismatchError, VerificationError):
+        except (VerifyMismatchError, VerificationError, Exception):
             return False
 
     def password_needs_rehash(password_hash: str) -> bool:

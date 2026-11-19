@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api-client';
-import { Session, User } from '@/types/auth';
+import { LoginResponse, Session, User } from '@/types/auth';
 import { SuccessResponse } from '@/types/api';
 
 export const authService = {
@@ -10,8 +10,8 @@ export const authService = {
     });
   },
 
-  async login(data: { email: string; password: string }): Promise<{ access_token: string }> {
-    return apiClient<{ access_token: string }>('/api/v1/auth/login', {
+  async login(data: { email: string; password: string }): Promise<LoginResponse> {
+    return apiClient<LoginResponse>('/api/v1/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     });

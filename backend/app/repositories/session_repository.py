@@ -41,7 +41,6 @@ class SessionRepository:
         )
         self.db.add(rt)
         await self.db.flush()
-        await self.db.refresh(rt)
         return rt
 
     async def get_refresh_token_by_hash(self, raw_token: str) -> RefreshToken | None:

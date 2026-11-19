@@ -51,7 +51,6 @@ class UserRepository:
 
     async def update_last_login(self, user: User) -> User:
         user.last_login_at = datetime.now(timezone.utc)
-        await self.db.flush()
         return user
 
     async def count(self) -> int:

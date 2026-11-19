@@ -26,3 +26,9 @@ export interface AuthState {
   isLoading: boolean;
 }
 
+export interface LoginResponse {
+  access_token: string;
+  token_type?: string;
+  user?: User;
+}
+

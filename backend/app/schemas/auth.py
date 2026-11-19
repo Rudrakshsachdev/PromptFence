@@ -2,6 +2,8 @@
 
 from pydantic import BaseModel, Field
 
+from app.schemas.user import UserResponse
+
 try:
     import email_validator
     from pydantic import EmailStr
@@ -28,6 +30,7 @@ class TokenResponse(BaseModel):
     """Token response (returned in body for access token)."""
     access_token: str
     token_type: str = "bearer"
+    user: UserResponse | None = None
 
 
 class RefreshRequest(BaseModel):
