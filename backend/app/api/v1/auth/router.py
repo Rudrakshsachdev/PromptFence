@@ -90,14 +90,14 @@ async def login(
     """Authenticate user with email and password, setting secure HttpOnly cookies."""
     auth_service = AuthService(db)
     device_info = request.headers.get("user-agent", "Unknown Device")
-    user, access_token, refresh_token = await auth_service.login(
+    user, access_token, refresh_token, user_response = await auth_service.login(
         email=data.email,
         password=data.password,
         device_info=device_info,
     )
 
     _set_auth_cookies(response, access_token, refresh_token)
-    return TokenResponse(access_token=access_token)
+    return TokenResponse(access_token=access_token, user=user_response)
 
 
 @router.post("/refresh", response_model=TokenResponse)

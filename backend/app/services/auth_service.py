@@ -17,9 +17,11 @@ from app.core.security import (
     verify_password,
 )
 from app.models.user import User
+from app.permissions.roles import PermissionType, RoleType
 from app.repositories.role_repository import RoleRepository
 from app.repositories.session_repository import SessionRepository
 from app.repositories.user_repository import UserRepository
+from app.schemas.user import UserResponse
 from app.services.email_service import get_email_service
 
 
@@ -91,10 +93,10 @@ class AuthService:
 
     async def login(
         self, *, email: str, password: str, device_info: str | None = None
-    ) -> tuple[User, str, str]:
+    ) -> tuple[User, str, str, UserResponse]:
         """
         Authenticate user with email and password.
-        Returns (user, access_token, refresh_token).
+        Returns (user, access_token, refresh_token, user_response).
         """
         normalized_email = email.lower().strip()
         user = await self.user_repo.get_by_email(normalized_email)
@@ -104,12 +106,30 @@ class AuthService:
         if not user.is_active:
             raise AuthenticationError("Account is disabled")
 
-        # Update last login
+        now = datetime.now(timezone.utc)
+        # Snapshot in-memory fields before flush expires modified/server-updated attributes
+        user_snapshot = {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "avatar_url": user.avatar_url,
+            "is_active": user.is_active,
+            "is_verified": user.is_verified,
+            "created_at": user.created_at,
+            "updated_at": user.updated_at or user.created_at,
+            "last_login_at": now,
+        }
+
+        # Update last login timestamp in-memory (committed with session token below)
         await self.user_repo.update_last_login(user)
 
-        # Load user roles for token claims
-        user_roles = await self.role_repo.get_user_roles(user.id)
-        roles_list = [ur.role.name for ur in user_roles if ur.role]
+        # Load user roles and permissions in a single consolidated database query
+        role_names, permissions = await self.role_repo.get_role_and_permission_names(user.id)
+        if RoleType.ADMIN.value in role_names:
+            permissions |= {p.value for p in PermissionType}
+
+        roles_list = sorted(role_names)
+        permissions_list = sorted(permissions)
 
         # Generate access and refresh tokens
         access_token = create_access_token(
@@ -118,8 +138,8 @@ class AuthService:
         )
         refresh_token, family_id = create_refresh_token(user_id=user.id)
 
-        # Store hashed refresh token in database
-        refresh_expires = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        # Store hashed refresh token in database (single round-trip flushes user update & token)
+        refresh_expires = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         await self.session_repo.create_refresh_token(
             user_id=user.id,
             raw_token=refresh_token,
@@ -128,7 +148,13 @@ class AuthService:
             device_info=device_info,
         )
 
-        return user, access_token, refresh_token
+        user_response = UserResponse(
+            **user_snapshot,
+            roles=roles_list,
+            permissions=permissions_list,
+        )
+
+        return user, access_token, refresh_token, user_response
 
     async def refresh_tokens(self, raw_refresh_token: str) -> tuple[str, str]:
         """

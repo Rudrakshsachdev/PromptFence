@@ -16,20 +16,38 @@ logger = logging.getLogger("create_credentials")
 
 USERS_TO_ENSURE = [
     {
+        "email": "admin@promptfence.io",
+        "password": "AdminPassword123!",
+        "full_name": "System Administrator",
+        "role": RoleType.ADMIN.value,
+    },
+    {
+        "email": "researcher@promptfence.io",
+        "password": "ResearcherPassword123!",
+        "full_name": "Security Researcher",
+        "role": RoleType.SECURITY_RESEARCHER.value,
+    },
+    {
+        "email": "viewer@promptfence.io",
+        "password": "ViewerPassword123!",
+        "full_name": "Security Auditor / Viewer",
+        "role": RoleType.VIEWER.value,
+    },
+    {
         "email": "admin@promptfence.internal",
-        "password": "AdminSecurePass123!",
+        "password": "AdminPassword123!",
         "full_name": "System Administrator",
         "role": RoleType.ADMIN.value,
     },
     {
         "email": "researcher@promptfence.internal",
-        "password": "ResearcherPass123!",
+        "password": "ResearcherPassword123!",
         "full_name": "Security Researcher",
         "role": RoleType.SECURITY_RESEARCHER.value,
     },
     {
         "email": "viewer@promptfence.internal",
-        "password": "ViewerPass123!",
+        "password": "ViewerPassword123!",
         "full_name": "Security Auditor / Viewer",
         "role": RoleType.VIEWER.value,
     },

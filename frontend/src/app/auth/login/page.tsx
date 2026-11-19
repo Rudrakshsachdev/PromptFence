@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,33 +38,40 @@ const SEED_ACCOUNTS =
         {
           role: 'Admin',
           badge: 'Full access',
-          email: 'admin@promptfence.internal',
-          password: 'AdminSecurePass123!',
+          email: 'admin@promptfence.io',
+          password: 'AdminPassword123!',
           icon: ShieldAlert,
         },
         {
           role: 'Researcher',
           badge: 'Read & write',
-          email: 'researcher@promptfence.internal',
-          password: 'ResearcherPass123!',
+          email: 'researcher@promptfence.io',
+          password: 'ResearcherPassword123!',
           icon: Shield,
         },
         {
-          // Created by backend/scripts/create_test_users.py (role: viewer)
           role: 'Viewer',
           badge: 'Read-only',
-          email: 'viewer@promptfence.internal',
-          password: 'ViewerPass123!',
+          email: 'viewer@promptfence.io',
+          password: 'ViewerPassword123!',
           icon: Eye,
         },
       ]
     : [];
 
 export default function LoginPage() {
+  const router = useRouter();
   const { login } = useAuth();
   useRedirectIfAuthenticated();
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Pre-warm client navigation cache for post-login destination routes
+  useEffect(() => {
+    router.prefetch('/overview');
+    router.prefetch('/scenarios');
+    router.prefetch('/targets');
+  }, [router]);
 
   const {
     register,

@@ -68,14 +68,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const login = async (data: { email: string; password: string }, options: LoginOptions = {}) => {
-    await authService.login(data);
+    const res = await authService.login(data);
     // Never show another account's cached server state to the new session.
     queryClient.clear();
 
-    const currentUser = await loadUser();
+    // Fast-path: use user returned directly in login response to eliminate redundant /auth/me HTTP round-trip
+    const currentUser = res.user ?? (await loadUser());
     if (!currentUser) {
       throw new ApiError(SESSION_NOT_ESTABLISHED_MESSAGE, 401, 'SESSION_NOT_ESTABLISHED');
     }
+    setUser(currentUser);
+    setIsLoading(false);
     // A requested deep link wins; otherwise land on the workspace for the user's role.
     router.replace(options.redirectTo ?? getHomeRoute(currentUser));
   };

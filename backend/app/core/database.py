@@ -1,5 +1,6 @@
 """Async SQLAlchemy database engine and session configuration."""
 
+import logging
 import time
 import uuid
 from datetime import datetime, timezone
@@ -59,6 +60,12 @@ def _install_idle_ping(async_engine: AsyncEngine, idle_seconds: float) -> None:
             raise exc.DisconnectionError("Stale pooled connection") from error
 
 
+logger = logging.getLogger(__name__)
+
+engine: AsyncEngine | None = None
+async_session_factory: async_sessionmaker[AsyncSession] | None = None
+engine_initialization_error: Exception | None = None
+
 try:
     engine = create_async_engine(
         settings.DATABASE_URL,
@@ -78,9 +85,11 @@ try:
         class_=AsyncSession,
         expire_on_commit=False,
     )
-except Exception:
+except Exception as exc:
+    logger.error("Failed to initialize database engine: %s", exc, exc_info=True)
     engine = None
     async_session_factory = None
+    engine_initialization_error = exc
 
 
 class Base(DeclarativeBase):
